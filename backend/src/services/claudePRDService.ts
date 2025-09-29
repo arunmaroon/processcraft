@@ -1,0 +1,442 @@
+import axios from 'axios';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables
+dotenv.config({ path: path.join(__dirname, '../../.env') });
+
+interface ClaudeResponse {
+  content: Array<{
+    text: string;
+  }>;
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+  };
+}
+
+interface PRDGenerationRequest {
+  prompt: string;
+  projectData: any;
+  pmFormData: any;
+}
+
+interface PRDGenerationResponse {
+  success: boolean;
+  content: string;
+  metadata: {
+    generatedAt: string;
+    generatedBy: string;
+    confidence: number;
+    source: string;
+    model: string;
+    tokens?: number;
+  };
+  error?: string;
+}
+
+class ClaudePRDService {
+  private apiKey: string;
+  private baseURL: string = 'https://api.anthropic.com/v1';
+
+  constructor() {
+    this.apiKey = process.env.CLAUDE_API_KEY || '';
+    console.log('🔑 Claude API Key loaded:', this.apiKey ? 'YES' : 'NO');
+    console.log('🔑 API Key preview:', this.apiKey ? `${this.apiKey.substring(0, 10)}...` : 'NOT SET');
+  }
+
+  async generatePRD(request: PRDGenerationRequest): Promise<PRDGenerationResponse> {
+    try {
+      if (!this.apiKey || this.apiKey === 'dummy-key') {
+        return this.generateFallbackPRD(request);
+      }
+
+      const enhancedPrompt = this.buildEnhancedPrompt(request);
+      
+      const response = await axios.post(`${this.baseURL}/messages`, {
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 6000,
+        temperature: 0.3,
+        messages: [
+          {
+            role: "user",
+            content: enhancedPrompt
+          }
+        ],
+        system: this.getSystemPrompt()
+      }, {
+        headers: {
+          'x-api-key': this.apiKey,
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01'
+        },
+        timeout: 60000 // 60 second timeout
+      });
+
+      const claudeResponse: ClaudeResponse = response.data;
+      const generatedContent = claudeResponse.content[0]?.text || '';
+
+      return {
+        success: true,
+        content: generatedContent,
+        metadata: {
+          generatedAt: new Date().toISOString(),
+          generatedBy: 'Claude 3.5 Sonnet (Anthropic)',
+          confidence: 0.95,
+          source: 'claude',
+          model: 'claude-3-5-sonnet-20241022',
+          tokens: claudeResponse.usage ? claudeResponse.usage.input_tokens + claudeResponse.usage.output_tokens : 0
+        }
+      };
+
+    } catch (error) {
+      console.error('Claude API Error:', error);
+      return this.generateFallbackPRD(request);
+    }
+  }
+
+  private getSystemPrompt(): string {
+    return `You are an elite Product Manager and technical writer with 15+ years of experience at top tech companies (Google, Apple, Microsoft, Amazon, Meta). You specialize in creating world-class Product Requirements Documents that are:
+
+1. **Strategic & Visionary**: Clear product vision, mission, and strategic positioning
+2. **User-Centric**: Deep understanding of user needs, pain points, and behaviors
+3. **Business-Focused**: Strong business case, market analysis, and ROI considerations
+4. **Technical Excellence**: Detailed technical requirements and architecture considerations
+5. **Actionable**: Clear, measurable goals, success metrics, and implementation plans
+6. **Stakeholder-Ready**: Professional format suitable for executives, engineers, designers, and investors
+
+You follow Carlin Yuen's PRD framework but enhance it with:
+- Advanced market research and competitive analysis
+- Detailed user personas and journey mapping
+- Comprehensive technical architecture
+- Risk assessment and mitigation strategies
+- Go-to-market strategy and launch planning
+- Post-launch optimization and iteration plans
+
+Your PRDs are known for their clarity, depth, and ability to drive successful product launches. You write in a professional, engaging tone that inspires teams and stakeholders.
+
+**Key Requirements:**
+- Use markdown formatting with clear headings
+- Include specific data, metrics, and evidence where possible
+- Provide actionable insights and recommendations
+- Ensure executive-ready presentation quality
+- Include implementation timelines and milestones
+- Add risk assessment and mitigation strategies
+- Focus on user value and business impact`;
+  }
+
+  private buildEnhancedPrompt(request: PRDGenerationRequest): string {
+    const { prompt, projectData, pmFormData } = request;
+    
+    return `Create a comprehensive, world-class Product Requirements Document for:
+
+**PROJECT OVERVIEW:**
+- Project Name: ${projectData?.name || 'New Product'}
+- Description: ${projectData?.description || 'Product description'}
+- Current Stage: ${projectData?.currentStage || 'PRODUCT_THINKING'}
+
+**PM INPUT DATA:**
+${pmFormData ? this.formatPMData(pmFormData) : 'No PM input data provided'}
+
+**GENERATION REQUEST:**
+${prompt}
+
+**REQUIREMENTS:**
+Create a professional PRD that includes:
+
+1. **EXECUTIVE SUMMARY** (2-3 paragraphs)
+   - Product vision and mission
+   - Key value propositions
+   - Business impact and market opportunity
+
+2. **PROBLEM STATEMENT & OPPORTUNITY** (Detailed analysis)
+   - Clear problem definition with data/evidence
+   - Market opportunity size and timing
+   - Current pain points and user frustrations
+   - Why now? Market timing and trends
+
+3. **TARGET USERS & PERSONAS** (Comprehensive user research)
+   - Detailed user personas with demographics, psychographics, behaviors
+   - User journey mapping (current state vs. desired state)
+   - User needs, goals, and pain points
+   - User research insights and data
+
+4. **MARKET ANALYSIS & COMPETITIVE LANDSCAPE**
+   - Market size, growth rate, and trends
+   - Competitive analysis with positioning
+   - Market gaps and opportunities
+   - SWOT analysis
+
+5. **PRODUCT VISION & STRATEGY**
+   - Product vision statement
+   - Strategic positioning and differentiation
+   - Value proposition canvas
+   - Product roadmap and evolution
+
+6. **SOLUTION DESIGN** (Detailed product specification)
+   - Core features and functionality
+   - User experience and interface requirements
+   - Technical architecture and requirements
+   - Integration requirements
+
+7. **SUCCESS METRICS & KPIs**
+   - Business metrics (revenue, growth, market share)
+   - User metrics (engagement, retention, satisfaction)
+   - Product metrics (performance, quality, adoption)
+   - Measurement framework and tracking
+
+8. **IMPLEMENTATION PLAN**
+   - Development phases and milestones
+   - Resource requirements and team structure
+   - Timeline and dependencies
+   - Risk assessment and mitigation
+
+9. **GO-TO-MARKET STRATEGY**
+   - Launch strategy and rollout plan
+   - Marketing and positioning
+   - Sales and distribution
+   - Customer success and support
+
+10. **TECHNICAL SPECIFICATIONS**
+    - System architecture and design
+    - Performance requirements
+    - Security and compliance
+    - Scalability and infrastructure
+
+**FORMATTING REQUIREMENTS:**
+- Use clear, professional markdown formatting
+- Include relevant data, metrics, and evidence
+- Add actionable insights and recommendations
+- Ensure stakeholder-ready presentation
+- Include executive summary and detailed sections
+- Use bullet points, tables, and visual hierarchy
+- Add implementation timelines and milestones
+
+Make this PRD exceptional - the kind that gets products funded, teams aligned, and products successfully launched.`;
+  }
+
+  private formatPMData(pmFormData: any): string {
+    let formatted = '';
+    
+    if (pmFormData.problemStatement) {
+      formatted += `\n**Problem Statement:** ${pmFormData.problemStatement}`;
+    }
+    if (pmFormData.opportunityDescription) {
+      formatted += `\n**Opportunity:** ${pmFormData.opportunityDescription}`;
+    }
+    if (pmFormData.targetUsers) {
+      formatted += `\n**Target Users:** ${pmFormData.targetUsers}`;
+    }
+    if (pmFormData.primaryUseCases) {
+      formatted += `\n**Primary Use Cases:** ${pmFormData.primaryUseCases}`;
+    }
+    if (pmFormData.elevatorPitch) {
+      formatted += `\n**Elevator Pitch:** ${pmFormData.elevatorPitch}`;
+    }
+    if (pmFormData.goals && pmFormData.goals.length > 0) {
+      formatted += `\n**Goals:**\n${pmFormData.goals.map((goal: string, index: number) => `${index + 1}. ${goal}`).join('\n')}`;
+    }
+    if (pmFormData.successMetrics && pmFormData.successMetrics.length > 0) {
+      formatted += `\n**Success Metrics:**\n${pmFormData.successMetrics.map((metric: string, index: number) => `${index + 1}. ${metric}`).join('\n')}`;
+    }
+    if (pmFormData.requirements && pmFormData.requirements.length > 0) {
+      formatted += `\n**Requirements:**\n${pmFormData.requirements.map((req: any) => `[${req.priority}] ${req.description}`).join('\n')}`;
+    }
+    
+    return formatted;
+  }
+
+  private generateFallbackPRD(request: PRDGenerationRequest): PRDGenerationResponse {
+    const { projectData, pmFormData } = request;
+    
+    return {
+      success: false,
+      content: this.createAdvancedFallbackPRD(projectData, pmFormData),
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        generatedBy: 'Advanced Fallback Generator',
+        confidence: 0.7,
+        source: 'fallback',
+        model: 'fallback-generator'
+      },
+      error: 'Claude API not configured, using advanced fallback'
+    };
+  }
+
+  private createAdvancedFallbackPRD(projectData: any, pmFormData: any): string {
+    const projectName = pmFormData?.projectName || projectData?.name || 'Strategic Product';
+    const projectDescription = pmFormData?.projectDescription || projectData?.description || 'innovative solution';
+
+    return `# Product Requirements Document: ${projectName}
+
+## Executive Summary
+
+${projectName} represents a strategic initiative to address critical market needs through ${projectDescription}. This comprehensive PRD outlines our vision for creating a market-leading product that delivers exceptional value to users while achieving significant business impact.
+
+**Key Value Propositions:**
+- ${pmFormData?.elevatorPitch || 'Revolutionary approach to solving critical user problems'}
+- Market-leading user experience and performance
+- Scalable architecture supporting future growth
+- Strong competitive differentiation
+
+## Problem Statement & Market Opportunity
+
+### The Problem
+${pmFormData?.problemStatement || `Current solutions in the market fail to adequately address critical user needs, resulting in significant pain points and missed opportunities. Users struggle with [specific challenges] that impact their productivity and satisfaction.`}
+
+### Market Opportunity
+${pmFormData?.opportunityDescription || `The market presents a significant opportunity with [market size] potential users and [growth rate] annual growth. Early market entry provides competitive advantages and first-mover benefits.`}
+
+### Why Now?
+- Market timing is optimal with emerging technologies
+- User behavior shifts create new opportunities
+- Competitive landscape is evolving rapidly
+- Technology infrastructure is ready for innovation
+
+## Target Users & Market Analysis
+
+### Primary User Personas
+
+**Persona 1: Primary Users**
+- Demographics: ${pmFormData?.targetUsers || 'Tech-savvy professionals, 25-45 years old'}
+- Goals: ${pmFormData?.primaryUseCases || 'Efficiency, productivity, and seamless experience'}
+- Pain Points: Current solutions are complex, slow, or lack key features
+- Behaviors: High digital engagement, values quality and performance
+
+### Market Analysis
+- **Total Addressable Market (TAM):** $X billion globally
+- **Serviceable Addressable Market (SAM):** $Y million in target segments
+- **Serviceable Obtainable Market (SOM):** $Z million achievable in 3 years
+
+### Competitive Landscape
+- **Direct Competitors:** [List key competitors and their strengths/weaknesses]
+- **Indirect Competitors:** [Alternative solutions and substitutes]
+- **Competitive Advantages:** [Our unique positioning and differentiators]
+
+## Product Vision & Strategy
+
+### Vision Statement
+"To become the leading platform that [vision statement] by [timeframe], empowering [target users] to [key outcomes]."
+
+### Strategic Positioning
+- **Primary Value Prop:** ${pmFormData?.elevatorPitch || 'Revolutionary solution that transforms how users [key action]'}
+- **Differentiation:** [Unique features and capabilities that set us apart]
+- **Target Market:** [Specific market segments and use cases]
+
+## Solution Design
+
+### Core Features & Functionality
+${pmFormData?.requirements && pmFormData.requirements.length > 0 ? 
+  pmFormData.requirements.map((req: any) => `- **[${req.priority}] ${req.description}**\n  - Use Case: ${req.useCase}\n  - Category: ${req.category}`).join('\n') :
+  `- **Core Feature 1:** [Description and value]
+- **Core Feature 2:** [Description and value]
+- **Core Feature 3:** [Description and value]`
+}
+
+### User Experience Requirements
+- Intuitive, user-friendly interface
+- Mobile-first responsive design
+- Accessibility compliance (WCAG 2.1)
+- Performance optimization for speed and reliability
+
+### Technical Architecture
+- **Frontend:** Modern web technologies with responsive design
+- **Backend:** Scalable microservices architecture
+- **Database:** High-performance data storage and retrieval
+- **Integration:** API-first approach for third-party integrations
+
+## Success Metrics & KPIs
+
+### Business Metrics
+${pmFormData?.successMetrics && pmFormData.successMetrics.length > 0 ?
+  pmFormData.successMetrics.map((metric: string, index: number) => `${index + 1}. ${metric}`).join('\n') :
+  `1. Revenue Growth: 150% YoY increase
+2. Market Share: 15% within 2 years
+3. Customer Acquisition: 10,000+ active users
+4. Customer Lifetime Value: $X per user`
+}
+
+### User Metrics
+- User Engagement: 80%+ monthly active users
+- User Satisfaction: 4.5+ star rating
+- User Retention: 70%+ after 6 months
+- Net Promoter Score: 50+ NPS
+
+### Product Metrics
+- Performance: <2 second load times
+- Uptime: 99.9% availability
+- Feature Adoption: 60%+ for core features
+- Support Tickets: <5% of user base
+
+## Implementation Plan
+
+### Phase 1: Foundation (Months 1-3)
+- Core platform development
+- Basic feature set implementation
+- Initial user testing and feedback
+
+### Phase 2: Enhancement (Months 4-6)
+- Advanced features and integrations
+- Performance optimization
+- Beta user program
+
+### Phase 3: Launch (Months 7-9)
+- Full feature set completion
+- Marketing and go-to-market execution
+- Public launch and user acquisition
+
+### Phase 4: Scale (Months 10-12)
+- User growth and engagement optimization
+- Advanced analytics and insights
+- International expansion planning
+
+## Go-to-Market Strategy
+
+### Launch Strategy
+- **Soft Launch:** Limited beta with key users
+- **Public Launch:** Full marketing campaign and user acquisition
+- **International:** Gradual expansion to key markets
+
+### Marketing & Positioning
+- Content marketing and thought leadership
+- Digital marketing and social media
+- Partnership and integration strategies
+- User community building
+
+## Risk Assessment & Mitigation
+
+### Technical Risks
+- **Risk:** Scalability challenges
+- **Mitigation:** Cloud-native architecture and load testing
+
+### Market Risks
+- **Risk:** Competitive response
+- **Mitigation:** Strong differentiation and rapid innovation
+
+### Business Risks
+- **Risk:** User adoption challenges
+- **Mitigation:** User research and iterative improvement
+
+## Technical Specifications
+
+### System Requirements
+- **Performance:** <2 second response times
+- **Scalability:** Support 100,000+ concurrent users
+- **Security:** Enterprise-grade security and compliance
+- **Availability:** 99.9% uptime SLA
+
+### Integration Requirements
+- Third-party API integrations
+- Data import/export capabilities
+- Single sign-on (SSO) support
+- Mobile app development
+
+---
+
+*This PRD was generated using ProcessCraft AI with advanced fallback generation*
+*Generated on ${new Date().toLocaleDateString()}*
+*Framework: Enhanced Carlin Yuen PRD methodology*`;
+  }
+}
+
+export default new ClaudePRDService();

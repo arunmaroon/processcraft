@@ -1,0 +1,124 @@
+{
+  "id": "research-1758648753634",
+  "projectId": "75946a42-aa6c-45d9-add2-243d90265800",
+  "status": "COMPLETED",
+  "product": "Complete NACH",
+  "cohorts": [
+    {
+      "id": "1",
+      "name": "Primary Users",
+      "description": "Main target audience",
+      "demographics": {
+        "ageRange": [
+          25,
+          35
+        ],
+        "gender": [
+          "All"
+        ],
+        "location": [
+          "Global"
+        ],
+        "income": [
+          "$50K-$100K"
+        ],
+        "education": [
+          "Bachelor's Degree"
+        ]
+      },
+      "size": 1000
+    }
+  ],
+  "personas": [
+    {
+      "id": "1",
+      "name": "Tech-Savvy Professional",
+      "description": "Young professional who values efficiency and modern design",
+      "goals": [
+        "Quick transactions1",
+        "Real-time updates1",
+        "Mobile-first experience1"
+      ],
+      "painPoints": [
+        "Complex interfaces1",
+        "Slow loading times1",
+        "Poor mobile experience1"
+      ],
+      "behaviors": [
+        "Uses mobile apps daily1",
+        "1",
+        "Values security1"
+      ],
+      "designPreferences": {
+        "complexity": "MODERATE",
+        "interactionStyle": "DASHBOARD",
+        "colorScheme": "LIGHT",
+        "accessibility": "STANDARD"
+      }
+    }
+  ],
+  "demographics": {
+    "ageRange": [
+      25,
+      35
+    ],
+    "gender": [
+      "All"
+    ],
+    "location": [
+      "Global"
+    ],
+    "income": [
+      "$50K-$100K"
+    ],
+    "education": [
+      "Bachelor's Degree"
+    ]
+  },
+  "insights": [
+    {
+      "id": "insight-1",
+      "title": "Mobile-First User Behavior",
+      "description": "Users strongly prefer mobile interfaces for financial transactions, with 78% of interactions occurring on mobile devices.",
+      "category": "BEHAVIOR",
+      "confidence": 0.85,
+      "evidence": [
+        "Mobile usage: 78%",
+        "Desktop usage: 22%",
+        "User feedback: \"Much easier on phone\""
+      ],
+      "source": "Mock Research",
+      "createdAt": "2025-09-23T17:32:34.823Z"
+    },
+    {
+      "id": "insight-2",
+      "title": "Security as Primary Concern",
+      "description": "Users prioritize security features over convenience, with 89% mentioning security as their top concern.",
+      "category": "SECURITY",
+      "confidence": 0.92,
+      "evidence": [
+        "Security mentions: 89%",
+        "Convenience mentions: 45%",
+        "User feedback: \"Safety first\""
+      ],
+      "source": "Mock Research",
+      "createdAt": "2025-09-23T17:32:34.823Z"
+    }
+  ],
+  "recommendations": [],
+  "report": {
+    "summary": "Research plan created for Complete NACH. This comprehensive study will analyze user behavior, preferences, and pain points across 1 user cohorts and 1 personas.",
+    "keyFindings": [],
+    "recommendations": [],
+    "methodology": "Mixed-method approach combining quantitative surveys and qualitative interviews",
+    "dataQuality": 0.85,
+    "nextSteps": [
+      "Conduct user interviews",
+      "Analyze data",
+      "Generate insights",
+      "Create recommendations"
+    ]
+  },
+  "createdAt": "2025-09-23T17:32:33.635Z",
+  "updatedAt": "2025-09-23T17:32:34.823Z"
+}

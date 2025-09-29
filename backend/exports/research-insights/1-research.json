@@ -1,0 +1,124 @@
+{
+  "id": "research-1758648818035",
+  "projectId": "1",
+  "status": "COMPLETED",
+  "product": "Enable users to buy and sell digital gold, Provide real-time gold price tracking, Offer secure wallet functionality",
+  "cohorts": [
+    {
+      "id": "1",
+      "name": "Primary Users",
+      "description": "Main target audience",
+      "demographics": {
+        "ageRange": [
+          25,
+          35
+        ],
+        "gender": [
+          "All"
+        ],
+        "location": [
+          "Global"
+        ],
+        "income": [
+          "$50K-$100K"
+        ],
+        "education": [
+          "Bachelor's Degree"
+        ]
+      },
+      "size": 1000
+    }
+  ],
+  "personas": [
+    {
+      "id": "1",
+      "name": "Tech-Savvy Professional",
+      "description": "Young professional who values efficiency and modern design",
+      "goals": [
+        "Quick transactions",
+        "Real-time updates",
+        "Mobile-first experience"
+      ],
+      "painPoints": [
+        "Complex interfaces",
+        "Slow loading times",
+        "Poor mobile experience"
+      ],
+      "behaviors": [
+        "Uses mobile apps daily",
+        "Prefers minimal design",
+        "Values security"
+      ],
+      "designPreferences": {
+        "complexity": "MODERATE",
+        "interactionStyle": "DASHBOARD",
+        "colorScheme": "LIGHT",
+        "accessibility": "STANDARD"
+      }
+    }
+  ],
+  "demographics": {
+    "ageRange": [
+      25,
+      35
+    ],
+    "gender": [
+      "All"
+    ],
+    "location": [
+      "Global"
+    ],
+    "income": [
+      "$50K-$100K"
+    ],
+    "education": [
+      "Bachelor's Degree"
+    ]
+  },
+  "insights": [
+    {
+      "id": "insight-1",
+      "title": "Mobile-First User Behavior",
+      "description": "Users strongly prefer mobile interfaces for financial transactions, with 78% of interactions occurring on mobile devices.",
+      "category": "BEHAVIOR",
+      "confidence": 0.85,
+      "evidence": [
+        "Mobile usage: 78%",
+        "Desktop usage: 22%",
+        "User feedback: \"Much easier on phone\""
+      ],
+      "source": "Mock Research",
+      "createdAt": "2025-09-23T17:33:39.771Z"
+    },
+    {
+      "id": "insight-2",
+      "title": "Security as Primary Concern",
+      "description": "Users prioritize security features over convenience, with 89% mentioning security as their top concern.",
+      "category": "SECURITY",
+      "confidence": 0.92,
+      "evidence": [
+        "Security mentions: 89%",
+        "Convenience mentions: 45%",
+        "User feedback: \"Safety first\""
+      ],
+      "source": "Mock Research",
+      "createdAt": "2025-09-23T17:33:39.771Z"
+    }
+  ],
+  "recommendations": [],
+  "report": {
+    "summary": "Research plan created for Enable users to buy and sell digital gold, Provide real-time gold price tracking, Offer secure wallet functionality. This comprehensive study will analyze user behavior, preferences, and pain points across 1 user cohorts and 1 personas.",
+    "keyFindings": [],
+    "recommendations": [],
+    "methodology": "Mixed-method approach combining quantitative surveys and qualitative interviews",
+    "dataQuality": 0.85,
+    "nextSteps": [
+      "Conduct user interviews",
+      "Analyze data",
+      "Generate insights",
+      "Create recommendations"
+    ]
+  },
+  "createdAt": "2025-09-23T17:33:38.035Z",
+  "updatedAt": "2025-09-23T17:33:39.771Z"
+}

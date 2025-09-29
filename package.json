@@ -1,0 +1,29 @@
+{
+  "name": "processcraft-poc",
+  "version": "1.07-sirius",
+  "description": "AI-Powered UX Design Workflow Platform",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"cd frontend && npm run dev\" \"cd backend && npm run dev\"",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "install-all": "npm install && cd frontend && npm install && cd ../backend && npm install"
+  },
+  "keywords": [
+    "ux",
+    "design",
+    "ai",
+    "workflow",
+    "processcraft"
+  ],
+  "author": "ProcessCraft Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^7.6.0",
+    "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "axios": "^1.12.2",
+    "dotenv": "^17.2.2"
+  }
+}

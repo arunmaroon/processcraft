@@ -1,0 +1,18 @@
+{
+  "openaiApiKey": "dummy-key",
+  "adminPasscode": "admin123",
+  "maxFileSize": 100,
+  "allowedFileTypes": [
+    ".csv",
+    ".json",
+    ".pdf",
+    ".txt",
+    ".xlsx"
+  ],
+  "aiModel": "gpt-4",
+  "aiTemperature": 0.7,
+  "aiMaxTokens": 4000,
+  "biasCheckEnabled": true,
+  "notificationsEnabled": true,
+  "autoSave": true
+}

@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-500 hover:bg-primary-600 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-lg transition-colors duration-200;
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  }
+  
+  .stage-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .stage-research {
+    @apply bg-blue-100 text-blue-800;
+  }
+  
+  .stage-design {
+    @apply bg-green-100 text-green-800;
+  }
+  
+  .stage-ui {
+    @apply bg-purple-100 text-purple-800;
+  }
+  
+  .stage-code {
+    @apply bg-orange-100 text-orange-800;
+  }
+  
+  .stage-pending {
+    @apply bg-gray-100 text-gray-800;
+  }
+  
+  .stage-approved {
+    @apply bg-emerald-100 text-emerald-800;
+  }
+}
