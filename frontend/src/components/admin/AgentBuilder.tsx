@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Bot, Settings, TestTube, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { Bot, Settings, TestTube, CheckCircle, AlertCircle, Clock, Users, Filter, Search, FileText, Sparkles, Trash2, Moon, Play, Pause } from 'lucide-react';
+import PersonaCard from './PersonaCard';
+import EnhancedPersonaCard from './EnhancedPersonaCard';
 
 interface AIAgent {
   id: string;
   name: string;
   persona: string;
   product: string;
-  status: 'BUILDING' | 'ACTIVE' | 'ERROR' | 'TESTING';
+  status: 'BUILDING' | 'ACTIVE' | 'ERROR' | 'TESTING' | 'SLEEPING';
   accuracy: number;
   responses: number;
   lastActive: string;
@@ -18,291 +20,185 @@ interface AIAgent {
   };
 }
 
-interface AgentBuilderProps {
-  onAgentsBuilt: () => void;
+interface Persona {
+  id: string;
+  name: string;
+  age: number;
+  gender: string;
+  photo: string;
+  tagline: string;
+  status?: 'ACTIVE' | 'SLEEPING' | 'DELETED';
+  demographics: {
+    age: number;
+    occupation: string;
+    income_range: string;
+    location: string;
+    education: string;
+    family_status: string;
+    tech_savviness: string;
+    english_literacy: string;
+  };
+  experience: {
+    level: string;
+    context: string;
+    device_preference: string;
+    frequency: string;
+  };
+  goals: string[];
+  concerns: string[];
+  behaviors: string[];
+  communication_style: string;
+  preferences: string[];
+  pain_points: string[];
+  quote: string;
+  confidence: number;
+  background: {
+    education: string;
+    work_experience: string;
+    family: string;
+    lifestyle: string;
+  };
+  created_at: string;
 }
 
-export default function AgentBuilder({ onAgentsBuilt }: AgentBuilderProps) {
+interface AgentBuilderProps {
+  onAgentsBuilt: () => void;
+  generatedPersonas?: Persona[];
+  onAgentSleep?: (agentId: string) => void;
+  onAgentDelete?: (agentId: string) => void;
+}
+
+export default function AgentBuilder({ onAgentsBuilt, generatedPersonas = [], onAgentSleep, onAgentDelete }: AgentBuilderProps) {
   const [agents, setAgents] = useState<AIAgent[]>([]);
   const [isBuilding, setIsBuilding] = useState(false);
   const [buildingProgress, setBuildingProgress] = useState(0);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterOccupation, setFilterOccupation] = useState('');
+  const [filterTechLevel, setFilterTechLevel] = useState('');
+  const [uploadedDocuments, setUploadedDocuments] = useState<any[]>([]);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
   const [progressInterval, setProgressInterval] = useState<number | null>(null);
+
+  // Sleep/Delete functionality
+  const handleAgentSleep = (agentId: string) => {
+    if (onAgentSleep) {
+      onAgentSleep(agentId);
+    }
+    setAgents(prev => prev.map(agent => 
+      agent.id === agentId 
+        ? { ...agent, status: agent.status === 'SLEEPING' ? 'ACTIVE' : 'SLEEPING' }
+        : agent
+    ));
+  };
+
+  const handleAgentDelete = (agentId: string) => {
+    if (window.confirm('Are you sure you want to delete this agent? This action cannot be undone.')) {
+      if (onAgentDelete) {
+        onAgentDelete(agentId);
+      }
+      setAgents(prev => prev.filter(agent => agent.id !== agentId));
+    }
+  };
 
   useEffect(() => {
     loadAgents();
+    loadUploadedDocuments();
   }, []);
 
   const loadAgents = async () => {
     try {
-      const response = await fetch('/api/admin-research/agents');
+      const response = await fetch('/api/agents');
       if (response.ok) {
         const data = await response.json();
-        setAgents(data);
+        setAgents(Array.isArray(data.agents) ? data.agents : []);
       } else {
-        // Fallback: Load sample agents
-        setAgents([
-          {
-            id: '1',
-            name: 'Tech-Savvy Investor Agent',
-            persona: 'Tech-Savvy Investor',
-            product: 'DigiGold',
-            status: 'ACTIVE',
-            accuracy: 0.87,
-            responses: 1247,
-            lastActive: '2024-01-20T14:30:00Z',
-            personality: {
-              communicationStyle: 'FRIENDLY',
-              responseLength: 'MODERATE',
-              emotionalTone: 'POSITIVE',
-              technicalLevel: 'ADVANCED'
-            }
-          },
-          {
-            id: '2',
-            name: 'Conservative Saver Agent',
-            persona: 'Conservative Saver',
-            product: 'DigiGold',
-            status: 'BUILDING',
-            accuracy: 0.0,
-            responses: 0,
-            lastActive: '2024-01-20T15:00:00Z',
-            personality: {
-              communicationStyle: 'PROFESSIONAL',
-              responseLength: 'DETAILED',
-              emotionalTone: 'CONCERNED',
-              technicalLevel: 'INTERMEDIATE'
-            }
-          }
-        ]);
+        setAgents([]);
       }
     } catch (error) {
-      console.log('API not available, using fallback data');
-      // Use fallback data
-      setAgents([
-        {
-          id: '1',
-          name: 'Tech-Savvy Investor Agent',
-          persona: 'Tech-Savvy Investor',
-          product: 'DigiGold',
-          status: 'ACTIVE',
-          accuracy: 0.87,
-          responses: 1247,
-          lastActive: '2024-01-20T14:30:00Z',
-          personality: {
-            communicationStyle: 'FRIENDLY',
-            responseLength: 'MODERATE',
-            emotionalTone: 'POSITIVE',
-            technicalLevel: 'ADVANCED'
-          }
-        }
-      ]);
+      console.error('Error loading agents:', error);
+      setAgents([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadUploadedDocuments = async () => {
+    try {
+      const response = await fetch('/api/admin-research/documents');
+      if (response.ok) {
+        const data = await response.json();
+        setUploadedDocuments(Array.isArray(data.documents) ? data.documents : []);
+      } else {
+        setUploadedDocuments([]);
+      }
+    } catch (error) {
+      console.error('Error loading documents:', error);
+      setUploadedDocuments([]);
+    } finally {
+      setIsLoadingDocuments(false);
     }
   };
 
   const buildAgents = async () => {
     setIsBuilding(true);
     setBuildingProgress(0);
-
-    try {
-      // Simulate building progress
-      const interval = setInterval(() => {
-        setBuildingProgress(prev => {
-          if (prev >= 100) {
-            if (progressInterval) clearInterval(progressInterval);
-            return 100;
-          }
-          return prev + Math.random() * 20;
-        });
-      }, 300);
-      setProgressInterval(interval);
-
-      const response = await fetch('/api/admin-research/build-agents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
+    
+    const interval = setInterval(() => {
+      setBuildingProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setIsBuilding(false);
+          onAgentsBuilt();
+          return 100;
+        }
+        return prev + 10;
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAgents(data.agents);
-      } else {
-        // Fallback: Generate mock agents
-        setTimeout(() => {
-          const newAgents: AIAgent[] = [
-            {
-              id: `agent-${Date.now()}`,
-              name: 'AI-Generated Investor Agent',
-              persona: 'Tech-Savvy Investor',
-              product: 'DigiGold',
-              status: 'ACTIVE',
-              accuracy: 0.92,
-              responses: 0,
-              lastActive: new Date().toISOString(),
-              personality: {
-                communicationStyle: 'FRIENDLY',
-                responseLength: 'MODERATE',
-                emotionalTone: 'POSITIVE',
-                technicalLevel: 'ADVANCED'
-              }
-            },
-            {
-              id: `agent-${Date.now() + 1}`,
-              name: 'AI-Generated Saver Agent',
-              persona: 'Conservative Saver',
-              product: 'DigiGold',
-              status: 'ACTIVE',
-              accuracy: 0.89,
-              responses: 0,
-              lastActive: new Date().toISOString(),
-              personality: {
-                communicationStyle: 'PROFESSIONAL',
-                responseLength: 'DETAILED',
-                emotionalTone: 'CONCERNED',
-                technicalLevel: 'INTERMEDIATE'
-              }
-            }
-          ];
-          setAgents(prev => [...prev, ...newAgents]);
-          if (progressInterval) clearInterval(progressInterval);
-          setBuildingProgress(100);
-        }, 4000);
-      }
-    } catch (error) {
-      console.log('API not available, using fallback agent building');
-      // Fallback agent building
-      setTimeout(() => {
-        const newAgents: AIAgent[] = [
-          {
-            id: `agent-${Date.now()}`,
-            name: 'AI-Generated Investor Agent',
-            persona: 'Tech-Savvy Investor',
-            product: 'DigiGold',
-            status: 'ACTIVE',
-            accuracy: 0.92,
-            responses: 0,
-            lastActive: new Date().toISOString(),
-            personality: {
-              communicationStyle: 'FRIENDLY',
-              responseLength: 'MODERATE',
-              emotionalTone: 'POSITIVE',
-              technicalLevel: 'ADVANCED'
-            }
-          }
-        ];
-        setAgents(prev => [...prev, ...newAgents]);
-        if (progressInterval) clearInterval(progressInterval);
-        setBuildingProgress(100);
-      }, 4000);
-    } finally {
-      setTimeout(() => {
-        setIsBuilding(false);
-        setBuildingProgress(0);
-        onAgentsBuilt();
-      }, 5000);
-    }
+    }, 200);
+    
+    setProgressInterval(interval);
   };
 
-  const testAgent = async (agentId: string) => {
-    setSelectedAgent(agentId);
-    // Update agent status to testing
-    setAgents(prev => prev.map(agent => 
-      agent.id === agentId ? { ...agent, status: 'TESTING' } : agent
-    ));
-
-    try {
-      const response = await fetch('/api/admin-research/test-agent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Update agent with test results
-        setAgents(prev => prev.map(agent => 
-          agent.id === agentId ? { 
-            ...agent, 
-            status: 'ACTIVE',
-            accuracy: data.accuracy,
-            responses: agent.responses + 1
-          } : agent
-        ));
-      } else {
-        // Fallback: Simulate test
-        setTimeout(() => {
-          setAgents(prev => prev.map(agent => 
-            agent.id === agentId ? { 
-              ...agent, 
-              status: 'ACTIVE',
-              accuracy: 0.85 + Math.random() * 0.1,
-              responses: agent.responses + 1
-            } : agent
-          ));
-        }, 2000);
-      }
-    } catch (error) {
-      console.log('API not available, simulating test');
-      // Fallback test
-      setTimeout(() => {
-        setAgents(prev => prev.map(agent => 
-          agent.id === agentId ? { 
-            ...agent, 
-            status: 'ACTIVE',
-            accuracy: 0.85 + Math.random() * 0.1,
-            responses: agent.responses + 1
-          } : agent
-        ));
-      }, 2000);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': return 'bg-green-100 text-green-800';
+      case 'SLEEPING': return 'bg-yellow-100 text-yellow-800';
+      case 'BUILDING': return 'bg-blue-100 text-blue-800';
+      case 'ERROR': return 'bg-red-100 text-red-800';
+      case 'TESTING': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'ACTIVE':
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'BUILDING':
-        return <Clock className="w-4 h-4 text-yellow-600" />;
-      case 'TESTING':
-        return <TestTube className="w-4 h-4 text-blue-600" />;
-      case 'ERROR':
-        return <AlertCircle className="w-4 h-4 text-red-600" />;
-      default:
-        return <Clock className="w-4 h-4 text-gray-600" />;
+      case 'ACTIVE': return <CheckCircle className="w-3 h-3 mr-1" />;
+      case 'SLEEPING': return <Moon className="w-3 h-3 mr-1" />;
+      case 'BUILDING': return <Clock className="w-3 h-3 mr-1" />;
+      case 'ERROR': return <AlertCircle className="w-3 h-3 mr-1" />;
+      case 'TESTING': return <TestTube className="w-3 h-3 mr-1" />;
+      default: return <Bot className="w-3 h-3 mr-1" />;
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ACTIVE':
-        return 'bg-green-100 text-green-800';
-      case 'BUILDING':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'TESTING':
-        return 'bg-blue-100 text-blue-800';
-      case 'ERROR':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getAccuracyColor = (accuracy: number) => {
-    if (accuracy >= 0.8) return 'text-green-600';
-    if (accuracy >= 0.6) return 'text-yellow-600';
-    return 'text-red-600';
-  };
+  // Filter personas based on search and filters
+  const filteredPersonas = (generatedPersonas || []).filter(persona => {
+    if (!persona) return false;
+    const matchesSearch = (persona.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (persona.demographics?.location || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (persona.tagline || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesOccupation = !filterOccupation || (persona.demographics?.occupation || '') === filterOccupation;
+    const matchesTechLevel = !filterTechLevel || (persona.demographics?.tech_savviness || '') === filterTechLevel;
+    
+    return matchesSearch && matchesOccupation && matchesTechLevel;
+  });
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading AI agents...</p>
-        </div>
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <span className="ml-3 text-gray-600">Loading agents...</span>
       </div>
     );
   }
@@ -310,167 +206,125 @@ export default function AgentBuilder({ onAgentsBuilt }: AgentBuilderProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Agent Builder</h2>
-        <p className="text-gray-600">Build and test AI agents that mimic real users based on your research data</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">AI Agents</h2>
+        <p className="text-gray-600">Manage and control your AI agents generated from research data</p>
       </div>
 
-      {/* Build Agents Section */}
+      {/* Search and Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Build AI Agents</h3>
-            <p className="text-sm text-gray-600">Generate agents from your personas, cohorts, and research insights</p>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search personas..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
-          <button
-            onClick={buildAgents}
-            disabled={isBuilding}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          <select
+            value={filterOccupation}
+            onChange={(e) => setFilterOccupation(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            {isBuilding ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Bot className="w-4 h-4" />
-            )}
-            <span>{isBuilding ? 'Building...' : 'Build Agents'}</span>
+            <option value="">All Occupations</option>
+            <option value="Software Engineer">Software Engineer</option>
+            <option value="Product Manager">Product Manager</option>
+            <option value="Designer">Designer</option>
+            <option value="Manager">Manager</option>
+          </select>
+          <select
+            value={filterTechLevel}
+            onChange={(e) => setFilterTechLevel(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">All Tech Levels</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+          <button
+            onClick={() => {
+              setSearchTerm('');
+              setFilterOccupation('');
+              setFilterTechLevel('');
+            }}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Clear Filters
           </button>
         </div>
-
-        {isBuilding && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm text-gray-600">
-              <span>Creating AI agents from research data...</span>
-              <span>{Math.round(buildingProgress)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${buildingProgress}%` }}
-              />
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Agents List */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">AI Agents ({agents.length})</h3>
-        </div>
-
-        {agents.map((agent) => (
-          <div key={agent.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-2">
-                  <h4 className="text-lg font-semibold text-gray-900">{agent.name}</h4>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(agent.status)}`}>
-                    {getStatusIcon(agent.status)}
-                    <span className="ml-1">{agent.status}</span>
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Persona: {agent.persona} • Product: {agent.product}
-                </p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => testAgent(agent.id)}
-                  disabled={agent.status === 'BUILDING' || agent.status === 'TESTING'}
-                  className="flex items-center space-x-1 px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <TestTube className="w-4 h-4" />
-                  <span>Test</span>
-                </button>
-                <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                  <Settings className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Agent Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-              <div>
-                <div className="text-sm text-gray-600">Accuracy</div>
-                <div className={`text-lg font-semibold ${getAccuracyColor(agent.accuracy)}`}>
-                  {Math.round(agent.accuracy * 100)}%
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Responses</div>
-                <div className="text-lg font-semibold text-gray-900">{agent.responses.toLocaleString()}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Last Active</div>
-                <div className="text-sm text-gray-900">
-                  {new Date(agent.lastActive).toLocaleDateString()}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Status</div>
-                <div className="text-sm font-medium text-gray-900">
-                  {agent.status.replace('_', ' ').toLowerCase()}
-                </div>
-              </div>
-            </div>
-
-            {/* Personality Settings */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h5 className="text-sm font-medium text-gray-900 mb-3">Personality Settings</h5>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">Communication: </span>
-                  <span className="font-medium">{agent.personality.communicationStyle}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Response Length: </span>
-                  <span className="font-medium">{agent.personality.responseLength}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Emotional Tone: </span>
-                  <span className="font-medium">{agent.personality.emotionalTone}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Technical Level: </span>
-                  <span className="font-medium">{agent.personality.technicalLevel}</span>
-                </div>
-              </div>
-            </div>
+      {/* AI-Generated Personas from Documents */}
+      {generatedPersonas && generatedPersonas.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center mb-4">
+            <Sparkles className="w-6 h-6 text-blue-600 mr-2" />
+            <h3 className="text-xl font-semibold text-gray-900">AI-Generated Personas from Documents</h3>
+            <span className="ml-2 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
+              {generatedPersonas.length} personas
+            </span>
           </div>
-        ))}
-      </div>
-
-      {agents.length === 0 && (
-        <div className="text-center py-12">
-          <Bot className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No AI agents yet</h3>
-          <p className="text-gray-600">
-            Build your first AI agents to start mimicking real users in virtual research studies
-          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {(generatedPersonas || []).map((persona) => {
+              if (!persona || !persona.id) return null;
+              return (
+                <div key={persona.id} className="group">
+                  <EnhancedPersonaCard
+                    persona={persona}
+                    isSelected={selectedAgent === persona.id}
+                    onSelect={(persona) => setSelectedAgent(persona.id)}
+                    showDetails={true}
+                  />
+                  {/* Action Buttons */}
+                  <div className="mt-4 flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <button
+                      onClick={() => handleAgentSleep(persona.id)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        persona.status === 'SLEEPING'
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                          : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                      }`}
+                    >
+                      {persona.status === 'SLEEPING' ? (
+                        <>
+                          <Play className="w-4 h-4 inline mr-1" />
+                          Wake Up
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="w-4 h-4 inline mr-1" />
+                          Sleep
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleAgentDelete(persona.id)}
+                      className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all duration-200 text-sm font-medium"
+                    >
+                      <Trash2 className="w-4 h-4 inline mr-1" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {/* Instructions */}
-      <div className="bg-blue-50 rounded-lg p-6">
-        <h4 className="font-semibold text-blue-900 mb-3">Agent Building Process</h4>
-        <ul className="space-y-2 text-sm text-blue-800">
-          <li className="flex items-start">
-            <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-            <span>AI analyzes your uploaded research data and persona configurations</span>
-          </li>
-          <li className="flex items-start">
-            <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-            <span>Generates realistic user behaviors and response patterns</span>
-          </li>
-          <li className="flex items-start">
-            <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-            <span>Creates agents that can participate in virtual research studies</span>
-          </li>
-          <li className="flex items-start">
-            <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-            <span>Test agents to ensure they respond realistically to research questions</span>
-          </li>
-        </ul>
-      </div>
+      {/* Empty State */}
+      {(!generatedPersonas || generatedPersonas.length === 0) && (
+        <div className="text-center py-12">
+          <Bot className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No AI Agents Yet</h3>
+          <p className="text-gray-600 mb-4">
+            Upload research documents and process them to generate AI agents.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

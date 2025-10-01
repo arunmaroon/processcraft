@@ -14,7 +14,8 @@ interface ResearchStageProps {
 }
 
 const ResearchStage: React.FC<ResearchStageProps> = ({ project, onProjectUpdate }) => {
-  const { user } = useApp();
+  const { state } = useApp();
+  const user = state.user;
   const [currentStage, setCurrentStage] = useState(1);
   const [completedStages, setCompletedStages] = useState<number[]>([]);
   const [researchPlan, setResearchPlan] = useState<any>(null);
@@ -23,6 +24,9 @@ const ResearchStage: React.FC<ResearchStageProps> = ({ project, onProjectUpdate 
   const [showPRD, setShowPRD] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [prdData, setPrdData] = useState<any>(null);
+
+  // Check if user has Research role (case insensitive)
+  const canConductResearch = user?.role?.toLowerCase() === 'research' || user?.role?.toLowerCase() === 'researcher';
 
   const stages = [
     { id: 1, name: 'Research Plan', description: 'Generate AI-powered research plan' },
@@ -185,6 +189,7 @@ const ResearchStage: React.FC<ResearchStageProps> = ({ project, onProjectUpdate 
               <PRDViewerNotion
                 project={project}
                 prd={prdData}
+                userRole={user?.role}
                 onEdit={() => {
                   // Only PM can edit
                   if (user?.role === 'PM') {
@@ -226,42 +231,63 @@ const ResearchStage: React.FC<ResearchStageProps> = ({ project, onProjectUpdate 
           {/* Material Design Content */}
           {!showPRD && (
             <div>
-            {/* Progress Indicator */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-medium text-gray-900">Progress</h2>
-                <div className="flex items-center space-x-3">
-                  {prdData && (
-                    <button
-                      onClick={() => setShowPRD(true)}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                    >
-                      View PRD
-                    </button>
-                  )}
-                  <span className="text-sm text-gray-500">
-                    {Math.min(completedStages.length, 5)} of 5 stages completed
-                  </span>
+              {/* Role Access Control */}
+              {!canConductResearch ? (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
+                      <Brain className="w-6 h-6 text-yellow-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-yellow-800">Research Access Restricted</h3>
+                    <p className="text-yellow-700 mt-1">
+                      Only users with Research or Researcher role can conduct research activities. 
+                      Your current role: <span className="font-semibold">{user?.role || 'Unknown'}</span>
+                    </p>
+                    <p className="text-sm text-yellow-600 mt-2">
+                      Contact your administrator to get Research/Researcher role access.
+                    </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.min((completedStages.length / 5) * 100, 100)}%` }}
-                />
-              </div>
-            </div>
+              ) : (
+                <>
+                  {/* Progress Indicator */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h2 className="text-lg font-medium text-gray-900">Progress</h2>
+                      <div className="flex items-center space-x-3">
+                        {prdData && (
+                          <button
+                            onClick={() => setShowPRD(true)}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                          >
+                            View PRD
+                          </button>
+                        )}
+                        <span className="text-sm text-gray-500">
+                          {Math.min(completedStages.length, 5)} of 5 stages completed
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min((completedStages.length / 5) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
 
-            {/* Stage Navigation */}
-            <StageNavigation
-              stages={stages}
-              currentStage={currentStage}
-              onStageChange={setCurrentStage}
-              completedStages={completedStages}
-            />
+                  {/* Stage Navigation */}
+                  <StageNavigation
+                    stages={stages}
+                    currentStage={currentStage}
+                    onStageChange={setCurrentStage}
+                    completedStages={completedStages}
+                  />
 
-            {/* Stage Content */}
-            <div className="mt-6">
+                  {/* Stage Content */}
+                  <div className="mt-6">
               {/* Stage 1: Research Plan */}
               {currentStage === 1 && (
               <ResearchPlan
@@ -401,9 +427,11 @@ const ResearchStage: React.FC<ResearchStageProps> = ({ project, onProjectUpdate 
                   </div>
                 </div>
               )}
+                  </div>
+                </>
+              )}
             </div>
-          </div>
-        )}
+          )}
         </div>
       </div>
     </div>

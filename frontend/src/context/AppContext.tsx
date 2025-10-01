@@ -47,7 +47,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'UPDATE_PROJECT':
       return {
         ...state,
-        projects: state.projects.map(p => 
+        projects: (state.projects || []).map(p => 
           p.id === action.payload.id ? action.payload : p
         ),
       };
@@ -63,7 +63,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'MARK_NOTIFICATION_READ':
       return {
         ...state,
-        notifications: state.notifications.map(n =>
+        notifications: (state.notifications || []).map(n =>
           n.id === action.payload ? { ...n, read: true } : n
         ),
       };
@@ -95,7 +95,7 @@ interface AppContextType {
   refreshProjects: () => void;
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
@@ -289,7 +289,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Load PRD data for each project
-      const projectsWithPRD = projects.map(project => {
+      const projectsWithPRD = (projects || []).map(project => {
         try {
           const prdData = localStorage.getItem(`prd-generated-${project.id}`);
           if (prdData) {
@@ -319,19 +319,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getProjectById = (id: string): Project | undefined => {
-    return state.projects.find(p => p.id === id);
+    return (state.projects || []).find(p => p.id === id);
   };
 
   const getProjectsByRole = (role: string): Project[] => {
     if (!state.user) return [];
-    return state.projects.filter(project => {
+    return (state.projects || []).filter(project => {
       const assignedUsers = project.assignedUsers[role as keyof typeof project.assignedUsers];
       return assignedUsers?.includes(state.user!.id);
     });
   };
 
   const getUnreadNotifications = (): Notification[] => {
-    return state.notifications.filter(n => !n.read);
+    return (state.notifications || []).filter(n => !n.read);
   };
 
   const canUserEditProject = (projectId: string, stage: string): boolean => {
@@ -419,7 +419,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       
       // Also save to localStorage as backup
       const currentProjects = loadProjectsFromStorage();
-      const finalProjects = currentProjects.map(p => p.id === project.id ? updatedProject : p);
+      const finalProjects = (currentProjects || []).map(p => p.id === project.id ? updatedProject : p);
       saveProjectsToStorage(finalProjects);
       
     } catch (error) {

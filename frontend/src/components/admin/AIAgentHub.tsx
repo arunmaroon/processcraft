@@ -179,7 +179,7 @@ export default function AIAgentHub() {
 
       if (response.ok) {
         setSyntheticAgents(prev => 
-          prev.map(agent => 
+          (prev || []).map(agent => 
             agent.id === agentId 
               ? { ...agent, status: 'published' }
               : agent
@@ -393,7 +393,7 @@ function UploadDataTab({
             <h3 className="text-lg font-medium text-gray-900">Uploaded Files</h3>
           </div>
           <div className="divide-y divide-gray-200">
-            {files.map(file => (
+            {(files || []).map(file => (
               <div key={file.id} className="px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-blue-100 rounded-lg">
@@ -501,7 +501,7 @@ function AgentGalleryTab({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {agents.map(agent => (
+        {(agents || []).map(agent => (
           <AgentCard
             key={agent.id}
             agent={agent}
@@ -557,15 +557,15 @@ function AgentCard({
       <div className="space-y-2 mb-4">
         <div className="flex items-center space-x-2 text-sm text-gray-600">
           <Globe className="w-4 h-4" />
-          <span>{agent.demographics.location}</span>
+          <span>{agent.demographics?.location}</span>
         </div>
         <div className="flex items-center space-x-2 text-sm text-gray-600">
           <TrendingUp className="w-4 h-4" />
-          <span>{agent.demographics.income}</span>
+          <span>{agent.demographics?.income}</span>
         </div>
         <div className="flex items-center space-x-2 text-sm text-gray-600">
           <BarChart3 className="w-4 h-4" />
-          <span>{agent.demographics.occupation}</span>
+          <span>{agent.demographics?.occupation}</span>
         </div>
       </div>
 
@@ -578,7 +578,7 @@ function AgentCard({
       <div className="mb-4">
         <p className="text-xs font-medium text-gray-500 mb-2">Key Behaviors</p>
         <div className="flex flex-wrap gap-1">
-          {agent.behaviors.slice(0, 3).map((behavior, index) => (
+          {(agent.behaviors || []).slice(0, 3).map((behavior, index) => (
             <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
               {behavior}
             </span>
@@ -675,7 +675,7 @@ function CentralLibraryTab({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {agents.map(agent => (
+        {(agents || []).map(agent => (
           <div key={agent.id} className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-gradient-to-r from-green-100 to-blue-100 rounded-full flex items-center justify-center">
@@ -740,19 +740,19 @@ function AgentPreviewModal({
                 </div>
                 <div>
                   <span className="text-gray-500">Gender:</span>
-                  <span className="ml-2 font-medium">{agent.demographics.gender}</span>
+                  <span className="ml-2 font-medium">{agent.demographics?.gender}</span>
                 </div>
                 <div>
                   <span className="text-gray-500">Location:</span>
-                  <span className="ml-2 font-medium">{agent.demographics.location}</span>
+                  <span className="ml-2 font-medium">{agent.demographics?.location}</span>
                 </div>
                 <div>
                   <span className="text-gray-500">Income:</span>
-                  <span className="ml-2 font-medium">{agent.demographics.income}</span>
+                  <span className="ml-2 font-medium">{agent.demographics?.income}</span>
                 </div>
                 <div>
                   <span className="text-gray-500">Education:</span>
-                  <span className="ml-2 font-medium">{agent.demographics.education}</span>
+                  <span className="ml-2 font-medium">{agent.demographics?.education}</span>
                 </div>
               </div>
             </div>
@@ -761,7 +761,7 @@ function AgentPreviewModal({
             <div>
               <h4 className="font-medium text-gray-900 mb-3">Personality Traits</h4>
               <div className="flex flex-wrap gap-2">
-                {agent.personality.traits.map((trait, index) => (
+                {(agent.personality?.traits || []).map((trait, index) => (
                   <span key={index} className="px-3 py-1 bg-purple-100 text-purple-700 text-sm rounded-full">
                     {trait}
                   </span>
@@ -773,7 +773,7 @@ function AgentPreviewModal({
             <div>
               <h4 className="font-medium text-gray-900 mb-3">Key Behaviors</h4>
               <ul className="space-y-2">
-                {agent.behaviors.map((behavior, index) => (
+                {(agent.behaviors || []).map((behavior, index) => (
                   <li key={index} className="flex items-start space-x-2 text-sm text-gray-600">
                     <div className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 flex-shrink-0" />
                     <span>{behavior}</span>

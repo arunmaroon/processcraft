@@ -216,5 +216,31 @@
     "createdAt": "2025-09-29T13:58:00.010Z",
     "updatedAt": "2025-09-29T13:59:30.957Z",
     "version": 2
+  },
+  {
+    "id": "1759163782317",
+    "name": "qqqq",
+    "description": "qqq",
+    "status": "IN_PROGRESS",
+    "currentStage": "USER_RESEARCH",
+    "assignedUsers": {
+      "PM": [
+        "2"
+      ]
+    },
+    "prd": {
+      "id": "prd-1759163782292",
+      "objectives": [],
+      "targetUsers": [],
+      "successMetrics": [],
+      "businessContext": "",
+      "constraints": [],
+      "status": "DRAFT",
+      "createdAt": "2025-09-29T16:36:22.292Z",
+      "updatedAt": "2025-09-29T16:36:22.292Z"
+    },
+    "createdAt": "2025-09-29T16:36:22.317Z",
+    "updatedAt": "2025-09-29T16:44:01.206Z",
+    "version": 2
   }
 ]

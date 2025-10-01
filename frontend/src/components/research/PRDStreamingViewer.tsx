@@ -7,13 +7,15 @@ interface PRDStreamingViewerProps {
   onEdit: () => void;
   onFinalize: (prd: any) => void;
   onMoveToNext: () => void;
+  userRole?: string;
 }
 
 const PRDStreamingViewer: React.FC<PRDStreamingViewerProps> = ({
   project,
   onEdit,
   onFinalize,
-  onMoveToNext
+  onMoveToNext,
+  userRole = 'PM'
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
@@ -24,6 +26,9 @@ const PRDStreamingViewer: React.FC<PRDStreamingViewerProps> = ({
   const [showForm, setShowForm] = useState(true);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [aiStatus, setAiStatus] = useState('');
+  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
+  const [passcode, setPasscode] = useState('');
+  const [isReturningFromResearch, setIsReturningFromResearch] = useState(false);
   const [formData, setFormData] = useState({
     productName: project?.name || '',
     productDescription: project?.description || '',
@@ -36,12 +41,15 @@ const PRDStreamingViewer: React.FC<PRDStreamingViewerProps> = ({
     constraints: ''
   });
 
-  // Load existing PRD content from project or localStorage
+  // Load existing PRD content and form data from project or localStorage
   useEffect(() => {
+    // Check if user is returning from Research stage (project has PRD content)
     if (project?.prd?.content) {
       setGeneratedContent(project.prd.content);
       setIsComplete(true);
       setShowForm(false);
+      setIsReturningFromResearch(true);
+      console.log('PRD loaded from project - user returning from Research stage');
     } else if (project?.id) {
       // Check localStorage for saved PRD
       const savedPRD = localStorage.getItem(`prd-generated-${project.id}`);
@@ -52,9 +60,25 @@ const PRDStreamingViewer: React.FC<PRDStreamingViewerProps> = ({
             setGeneratedContent(prdData.content);
             setIsComplete(true);
             setShowForm(false);
+            console.log('PRD loaded from localStorage');
           }
         } catch (error) {
           console.error('Error loading saved PRD:', error);
+        }
+      }
+      
+      // Load saved form data
+      const savedFormData = localStorage.getItem(`prd-form-data-${project.id}`);
+      if (savedFormData) {
+        try {
+          const formDataFromStorage = JSON.parse(savedFormData);
+          setFormData(prevFormData => ({
+            ...prevFormData,
+            ...formDataFromStorage
+          }));
+          console.log('Form data loaded for project:', project.id);
+        } catch (error) {
+          console.error('Error loading saved form data:', error);
         }
       }
     }
@@ -129,6 +153,14 @@ const PRDStreamingViewer: React.FC<PRDStreamingViewerProps> = ({
         setAiStatus('✅ PRD generation completed successfully!');
         setIsComplete(true);
         setIsGenerating(false);
+        
+        // Save form data for future editing
+        const formDataToSave = {
+          ...formData,
+          generatedAt: new Date().toISOString()
+        };
+        localStorage.setItem(`prd-form-data-${project.id}`, JSON.stringify(formDataToSave));
+        console.log('Form data saved for project:', project.id);
       } else {
         console.error('PRD generation failed:', result.error);
         throw new Error(result.error || 'Failed to generate PRD');
@@ -205,32 +237,65 @@ const PRDStreamingViewer: React.FC<PRDStreamingViewerProps> = ({
     }));
   };
 
+  const handleEdit = () => {
+    if (isReturningFromResearch) {
+      setShowPasscodeModal(true);
+    } else {
+      setShowForm(true);
+      setIsComplete(false);
+      setGeneratedContent('');
+      onEdit();
+    }
+  };
+
+  const handlePasscodeSubmit = () => {
+    // Simple passcode check - you can make this more secure
+    if (passcode === '01234') {
+      setShowPasscodeModal(false);
+      setShowForm(true);
+      setIsComplete(false);
+      setGeneratedContent('');
+      onEdit();
+    } else {
+      alert('Invalid passcode. Please try again.');
+      setPasscode('');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-6 py-3">
+          {/* Header text above */}
+          <div className="mb-3">
+            <h1 className="text-xl font-semibold text-gray-900">PRD Generator</h1>
+            <p className="text-gray-500 text-sm">AI-powered PRD generation</p>
+          </div>
+          
+          {/* Icon and buttons row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-50 rounded-md">
-                <FileText className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">PRD Generator</h1>
-                <p className="text-gray-500 text-sm">AI-powered PRD generation</p>
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <FileText className="w-6 h-6 text-white" />
               </div>
             </div>
             <div className="flex items-center space-x-2">
               {isComplete && (
                 <>
-                  <Button
-                    onClick={onEdit}
-                    variant="outline"
-                    leftIcon={<Edit3 className="w-4 h-4" />}
-                    className="text-sm px-4 py-2"
-                  >
-                    Edit
-                  </Button>
+                  {/* Only PM can edit */}
+                  {userRole === 'PM' && (
+                    <Button
+                      onClick={handleEdit}
+                      variant="outline"
+                      leftIcon={<Edit3 className="w-4 h-4" />}
+                      className="text-sm px-4 py-2"
+                    >
+                      Edit
+                    </Button>
+                  )}
+                  
+                  {/* All users can export */}
                   <Button
                     onClick={exportPRD}
                     variant="outline"
@@ -239,20 +304,26 @@ const PRDStreamingViewer: React.FC<PRDStreamingViewerProps> = ({
                   >
                     Export
                   </Button>
-                  <Button
-                    onClick={() => onFinalize({ content: generatedContent, project })}
-                    leftIcon={<CheckCircle className="w-4 h-4" />}
-                    className="text-sm px-4 py-2 bg-green-600 hover:bg-green-700"
-                  >
-                    Finalize
-                  </Button>
-                  <Button
-                    onClick={onMoveToNext}
-                    leftIcon={<ArrowRight className="w-4 h-4" />}
-                    className="text-sm px-4 py-2"
-                  >
-                    Move to Research
-                  </Button>
+                  
+                  {/* Only PM can finalize and move to next stage */}
+                  {userRole === 'PM' && (
+                    <>
+                      <Button
+                        onClick={() => onFinalize({ content: generatedContent, project })}
+                        leftIcon={<CheckCircle className="w-4 h-4" />}
+                        className="text-sm px-4 py-2 bg-green-600 hover:bg-green-700"
+                      >
+                        Finalize
+                      </Button>
+                      <Button
+                        onClick={onMoveToNext}
+                        leftIcon={<ArrowRight className="w-4 h-4" />}
+                        className="text-sm px-4 py-2"
+                      >
+                        Move to Research
+                      </Button>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -271,7 +342,7 @@ const PRDStreamingViewer: React.FC<PRDStreamingViewerProps> = ({
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-medium text-gray-900">
-                    {aiStatus || 'Generating PRD...'}
+                    {generationSteps[currentStepIndex] || aiStatus || 'Generating PRD...'}
                   </span>
                   <span className="text-sm text-gray-500">{Math.round(generationProgress)}%</span>
                 </div>
@@ -280,9 +351,6 @@ const PRDStreamingViewer: React.FC<PRDStreamingViewerProps> = ({
                     className="bg-blue-600 h-1.5 rounded-full transition-all duration-500 ease-out"
                     style={{ width: `${generationProgress}%` }}
                   ></div>
-                </div>
-                <div className="mt-1 text-xs text-gray-500">
-                  {generationSteps[currentStepIndex] || 'Processing...'}
                 </div>
               </div>
             </div>
@@ -303,6 +371,53 @@ const PRDStreamingViewer: React.FC<PRDStreamingViewerProps> = ({
                 className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
               >
                 Try again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Passcode Modal */}
+      {showPasscodeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
+            <div className="flex items-center mb-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                <FileText className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Edit PRD</h3>
+                <p className="text-sm text-gray-500">Enter passcode to edit</p>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Passcode
+              </label>
+              <input
+                type="password"
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter passcode"
+                onKeyPress={(e) => e.key === 'Enter' && handlePasscodeSubmit()}
+              />
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowPasscodeModal(false);
+                  setPasscode('');
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePasscodeSubmit}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              >
+                Edit PRD
               </button>
             </div>
           </div>
@@ -460,6 +575,34 @@ const PRDStreamingViewer: React.FC<PRDStreamingViewerProps> = ({
           </div>
         ) : generatedContent ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            {/* View-only mode indicator */}
+            <div className="bg-blue-50 border-b border-blue-200 px-6 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-blue-900">
+                    {isReturningFromResearch 
+                      ? 'PRD Generated - Returning from Research Stage' 
+                      : userRole === 'PM' 
+                        ? 'PRD Generated - Ready for Review' 
+                        : 'PRD Generated - View Only'
+                    }
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {isReturningFromResearch && (
+                    <span className="text-xs text-blue-700 bg-blue-100 px-2 py-1 rounded-full">
+                      Passcode required to edit
+                    </span>
+                  )}
+                  {userRole !== 'PM' && !isReturningFromResearch && (
+                    <span className="text-xs text-blue-700 bg-blue-100 px-2 py-1 rounded-full">
+                      Only PM can edit
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
             <div className="p-8">
               <div
                 dangerouslySetInnerHTML={{

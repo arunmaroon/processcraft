@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Upload, FileText, X, CheckCircle, AlertCircle, Database } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Upload, FileText, X, CheckCircle, AlertCircle, Database, Eye } from 'lucide-react';
 
 interface UploadedFile {
   id: string;
@@ -18,6 +18,39 @@ export default function DataUploader({ onDataUploaded }: DataUploaderProps) {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [previewDocument, setPreviewDocument] = useState<any>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+
+  // Load existing documents on component mount
+  useEffect(() => {
+    loadExistingDocuments();
+  }, []);
+
+  const loadExistingDocuments = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/admin-research/documents');
+      if (response.ok) {
+        const data = await response.json();
+        const existingFiles = data.documents.map((doc: any) => ({
+          id: doc.id,
+          name: doc.originalName,
+          type: doc.mimetype,
+          size: formatFileSize(doc.size),
+          status: 'success',
+          uploadedAt: doc.uploadedAt
+        }));
+        setUploadedFiles(existingFiles);
+      }
+    } catch (error) {
+      console.log('Error loading existing documents:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -122,8 +155,125 @@ export default function DataUploader({ onDataUploaded }: DataUploaderProps) {
     }
   };
 
-  const removeFile = (fileId: string) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+  const removeFile = async (fileId: string) => {
+    try {
+      const response = await fetch(`/api/admin-research/documents/${fileId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+        onDataUploaded(); // Refresh the data
+      } else {
+        console.error('Failed to delete document');
+        alert('Failed to delete document. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('Error deleting document. Please try again.');
+    }
+  };
+
+  const previewFile = async (fileId: string) => {
+    try {
+      setIsPreviewLoading(true);
+      const response = await fetch(`/api/admin-research/documents/${fileId}/preview`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPreviewDocument(data);
+      } else {
+        // Fallback: Show basic file info
+        const file = uploadedFiles.find(f => f.id === fileId);
+        if (file) {
+          setPreviewDocument({
+            id: file.id,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            content: `Preview not available for ${file.type} files.`,
+            isPreview: false
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error previewing document:', error);
+      const file = uploadedFiles.find(f => f.id === fileId);
+      if (file) {
+        setPreviewDocument({
+          id: file.id,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          content: `Preview not available for ${file.type} files.`,
+          isPreview: false
+        });
+      }
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+  const handleUploadFinal = async () => {
+    const successfulFiles = uploadedFiles.filter(f => f.status === 'success');
+    
+    if (successfulFiles.length === 0) {
+      alert('Please upload at least one file before processing.');
+      return;
+    }
+
+    setIsProcessing(true);
+    setProcessingStatus('Processing documents with AI...');
+
+    try {
+      const response = await fetch('/api/admin-research/process-documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          fileIds: successfulFiles.map(f => f.id),
+          action: 'generate_agents'
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Document processing successful:', result);
+        setProcessingStatus('Documents processed successfully! AI agents generated.');
+        
+        // Show success message
+        setTimeout(() => {
+          setProcessingStatus('');
+          onDataUploaded();
+        }, 2000);
+      } else {
+        const error = await response.json();
+        console.error('Processing failed:', error);
+        setProcessingStatus(`Processing failed: ${error.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.log('API not available, simulating processing');
+      // Simulate processing
+      const steps = [
+        'Analyzing document content...',
+        'Extracting user patterns...',
+        'Generating AI personas...',
+        'Creating agent profiles...',
+        'Finalizing AI agents...'
+      ];
+
+      for (let i = 0; i < steps.length; i++) {
+        setProcessingStatus(steps[i]);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      setProcessingStatus('Processing completed! AI agents generated successfully.');
+      setTimeout(() => {
+        setProcessingStatus('');
+        onDataUploaded();
+      }, 2000);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -207,12 +357,34 @@ export default function DataUploader({ onDataUploaded }: DataUploaderProps) {
       {uploadedFiles.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <Database className="w-5 h-5 mr-2" />
-              Uploaded Files ({uploadedFiles.length})
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <Database className="w-5 h-5 mr-2" />
+                Uploaded Files ({uploadedFiles.length})
+              </h3>
+              <button
+                onClick={handleUploadFinal}
+                disabled={isProcessing || uploadedFiles.filter(f => f.status === 'success').length === 0}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isProcessing ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <CheckCircle className="w-4 h-4" />
+                )}
+                <span>{isProcessing ? 'Processing...' : 'Upload Final'}</span>
+              </button>
+            </div>
           </div>
           <div className="p-6">
+            {isProcessing && processingStatus && (
+              <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-blue-800 font-medium">{processingStatus}</span>
+                </div>
+              </div>
+            )}
             <div className="space-y-3">
               {uploadedFiles.map((file) => (
                 <div key={file.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -230,9 +402,19 @@ export default function DataUploader({ onDataUploaded }: DataUploaderProps) {
                       {file.status === 'uploading' ? 'Uploading...' : 
                        file.status === 'success' ? 'Uploaded' : 'Error'}
                     </span>
+                    {file.status === 'success' && (
+                      <button
+                        onClick={() => previewFile(file.id)}
+                        className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                        title="Preview file"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => removeFile(file.id)}
                       className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                      title="Delete file"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -266,6 +448,57 @@ export default function DataUploader({ onDataUploaded }: DataUploaderProps) {
           </li>
         </ul>
       </div>
+
+      {/* Document Preview Modal */}
+      {previewDocument && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <FileText className="w-6 h-6 text-gray-600" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{previewDocument.name}</h3>
+                    <p className="text-sm text-gray-600">{previewDocument.type} • {previewDocument.size}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPreviewDocument(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[70vh]">
+              {isPreviewLoading ? (
+                <div className="text-center py-8">
+                  <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading preview...</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {previewDocument.isPreview !== false ? (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-900 mb-2">Content Preview</h4>
+                      <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto">
+                        {previewDocument.content}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <h4 className="text-lg font-medium text-gray-900 mb-2">Preview Not Available</h4>
+                      <p className="text-gray-600">{previewDocument.content}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

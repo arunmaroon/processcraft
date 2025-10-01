@@ -136,7 +136,7 @@ PRD CONSTRAINTS:
 ${prdData.constraints ? prdData.constraints.join(', ') : 'No constraints specified'}
 ` : '';
 
-  return `You are a world-class UX Research Director with 20+ years of experience at top-tier companies like Google, Apple, Microsoft, and leading research agencies. Create a comprehensive, enterprise-grade research plan that matches the quality of $100K+ research studies from agencies like Nielsen Norman Group, IDEO, and Frog Design.
+  return `You are a world-class UX Research Director with 20+ years of experience at top-tier companies like Google, Apple, Microsoft, and leading research agencies. Create a comprehensive, enterprise-grade research plan that matches the quality of ₹1Cr+ research studies from agencies like Nielsen Norman Group, IDEO, and Frog Design.
 
 PROJECT DETAILS:
 - Project Name: ${project.name}
@@ -240,11 +240,11 @@ Include 6-8 comprehensive research methods with detailed descriptions, participa
 - **Phase 3**: Analysis & Synthesis (2-3 weeks)
 
 ## Budget Breakdown
-- **Total Budget**: $15,000 - $20,000
-- **Participant Incentives**: $8,000 - $10,000
-- **Research Tools & Software**: $2,000 - $3,000
-- **Researcher Time**: $3,000 - $4,000
-- **Analysis & Reporting**: $2,000 - $3,000
+- **Total Budget**: ₹15L - ₹20L
+- **Participant Incentives**: ₹8L - ₹10L
+- **Research Tools & Software**: ₹2L - ₹3L
+- **Researcher Time**: ₹3L - ₹4L
+- **Analysis & Reporting**: ₹2L - ₹3L
 
 ## Success Metrics & KPIs
 Include 10-12 specific, measurable success metrics with target values:
@@ -449,7 +449,7 @@ function generateFallbackPlan(researchInput: any) {
   const targetUsers = researchInput.targetUsers || 'target users';
   const researchGoals = researchInput.researchGoals || 'product improvement';
   const participantCount = researchInput.participantCount || 50;
-  const budgetRange = researchInput.budgetRange || '$10K - $20K';
+  const budgetRange = researchInput.budgetRange || '₹10L - ₹20L';
   const timeline = researchInput.timeline || '6-8 weeks';
   const ageRange = researchInput.ageRange || '25-45';
   const incomeLevel = researchInput.incomeLevel || 'Middle';
@@ -675,12 +675,12 @@ function generateFallbackPlan(researchInput: any) {
       ]
     },
     budget: {
-      total: budgetRange || '$15,000 - $20,000',
+      total: budgetRange || '₹15L - ₹20L',
       breakdown: {
-        'Participant Incentives': '$8,000 - $10,000',
-        'Research Tools & Software': '$2,000 - $3,000',
-        'Researcher Time': '$3,000 - $4,000',
-        'Analysis & Reporting': '$2,000 - $3,000'
+        'Participant Incentives': '₹8L - ₹10L',
+        'Research Tools & Software': '₹2L - ₹3L',
+        'Researcher Time': '₹3L - ₹4L',
+        'Analysis & Reporting': '₹2L - ₹3L'
       }
     },
     userPersonas: userPersonas.length > 0 ? userPersonas.map((persona: string, index: number) => ({

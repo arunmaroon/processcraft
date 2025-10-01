@@ -70,7 +70,7 @@ class Database {
               ],
               successMetrics: [
                 'User acquisition rate > 1000/month',
-                'Transaction volume > $100K/month',
+                'Transaction volume > ₹1Cr/month',
                 'User retention > 80% after 3 months'
               ],
               businessContext: 'Digital gold is becoming increasingly popular as an investment option. We need to create a user-friendly mobile app that makes gold investment accessible to everyone.',

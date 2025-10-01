@@ -33,6 +33,7 @@ interface PRDViewerNotionProps {
   onEdit?: () => void;
   onFinalize?: () => void;
   onMoveToNext?: () => void;
+  userRole?: string;
 }
 
 const PRDViewerNotion: React.FC<PRDViewerNotionProps> = ({
@@ -40,7 +41,8 @@ const PRDViewerNotion: React.FC<PRDViewerNotionProps> = ({
   prd,
   onEdit,
   onFinalize,
-  onMoveToNext
+  onMoveToNext,
+  userRole = 'PM'
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showFullContent, setShowFullContent] = useState(false);
@@ -209,21 +211,33 @@ const PRDViewerNotion: React.FC<PRDViewerNotionProps> = ({
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <Button
-                onClick={onEdit}
-                variant="outline"
-                leftIcon={<Edit3 className="w-4 h-4" />}
-                className="text-sm"
-              >
-                Edit
-              </Button>
-              <Button
-                onClick={onMoveToNext}
-                leftIcon={<ArrowRight className="w-4 h-4" />}
-                className="text-sm bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Move to Research
-              </Button>
+              {/* Only PM can edit */}
+              {userRole === 'PM' && onEdit && (
+                <Button
+                  onClick={onEdit}
+                  variant="outline"
+                  leftIcon={<Edit3 className="w-4 h-4" />}
+                  className="text-sm"
+                >
+                  Edit
+                </Button>
+              )}
+              {/* Only PM can move to next stage */}
+              {userRole === 'PM' && onMoveToNext && (
+                <Button
+                  onClick={onMoveToNext}
+                  leftIcon={<ArrowRight className="w-4 h-4" />}
+                  className="text-sm bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Move to Research
+                </Button>
+              )}
+              {/* Show view-only indicator for non-PM users */}
+              {userRole !== 'PM' && (
+                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  View Only - Only PM can edit
+                </span>
+              )}
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Bot, Target, Sliders, CheckCircle, Plus, Trash2, Edit3, Save } from 'lucide-react';
+import DualRangeSlider from '../ui/DualRangeSlider';
 
 interface AIAgent {
   id: string;
@@ -219,19 +220,19 @@ const ResearchSetup: React.FC<ResearchSetupProps> = ({ project, onSetupComplete 
           Choose AI Agents
         </h4>
         <p className="text-gray-600 text-sm mb-4">Select AI personas that will conduct the research analysis</p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {aiAgents.map((agent) => (
             <div
               key={agent.id}
               className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
                 agent.selected 
-                  ? 'border-blue-500 bg-blue-50' 
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
               onClick={() => handleAIAgentToggle(agent.id)}
-            >
-              <div className="flex items-start justify-between mb-2">
+              >
+                <div className="flex items-start justify-between mb-2">
                 <h5 className="font-semibold text-gray-900">{agent.name}</h5>
                 <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
                   agent.selected ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
@@ -247,11 +248,11 @@ const ResearchSetup: React.FC<ResearchSetupProps> = ({ project, onSetupComplete 
                     {skill}
                   </span>
                 ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
       {/* User Demographics */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -320,8 +321,8 @@ const ResearchSetup: React.FC<ResearchSetupProps> = ({ project, onSetupComplete 
                   className="absolute w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-lg transform -translate-y-1/2 cursor-pointer hover:bg-green-600 transition-colors"
                   style={{ left: `calc(${((userDemographics.ageRange[1] - 18) / (65 - 18)) * 100}% - 12px)` }}
                 ></div>
-              </div>
-              
+            </div>
+            
               {/* Range labels */}
               <div className="flex justify-between text-xs text-gray-500 mt-2">
                 <span>18</span>
@@ -331,7 +332,7 @@ const ResearchSetup: React.FC<ResearchSetupProps> = ({ project, onSetupComplete 
           </div>
 
           {/* Income Range Dual Slider */}
-          <div>
+        <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Income Range (INR): ₹{userDemographics.incomeRange[0].toLocaleString('en-IN')} - ₹{userDemographics.incomeRange[1].toLocaleString('en-IN')}
             </label>
@@ -349,47 +350,81 @@ const ResearchSetup: React.FC<ResearchSetupProps> = ({ project, onSetupComplete 
                   }}
                 ></div>
                 
-                {/* Min handle */}
-                <input
-                  type="range"
-                  min="10000"
-                  max="200000"
-                  step="5000"
-                  value={userDemographics.incomeRange[0]}
-                  onChange={(e) => {
-                    const newMin = parseInt(e.target.value);
-                    const newMax = Math.max(newMin, userDemographics.incomeRange[1]);
-                    handleDemographicsChange('incomeRange', [newMin, newMax]);
-                  }}
-                  className="absolute top-1/2 left-0 w-full h-6 opacity-0 cursor-pointer transform -translate-y-1/2"
-                  style={{ zIndex: userDemographics.incomeRange[0] > userDemographics.incomeRange[1] - 10000 ? 5 : 3 }}
-                />
+                {/* Replaced with DualRangeSlider component */}
                 
-                {/* Max handle */}
-                <input
-                  type="range"
-                  min="10000"
-                  max="200000"
-                  step="5000"
-                  value={userDemographics.incomeRange[1]}
-                  onChange={(e) => {
-                    const newMax = parseInt(e.target.value);
-                    const newMin = Math.min(newMax, userDemographics.incomeRange[0]);
-                    handleDemographicsChange('incomeRange', [newMin, newMax]);
+                {/* Min handle - Enhanced for better interaction */}
+                <div 
+                  className="absolute w-8 h-8 bg-blue-500 rounded-full border-4 border-white shadow-xl transform -translate-y-1/2 cursor-grab active:cursor-grabbing hover:scale-110 transition-all duration-200 hover:bg-blue-600"
+                  style={{ left: `calc(${((userDemographics.incomeRange[0] - 10000) / (200000 - 10000)) * 100}% - 16px)` }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    const startX = e.clientX;
+                    const startValue = userDemographics.incomeRange[0];
+                    
+                    const handleMouseMove = (e: MouseEvent) => {
+                      const rect = e.currentTarget.parentElement?.getBoundingClientRect();
+                      if (!rect) return;
+                      
+                      const percentage = ((e.clientX - rect.left) / rect.width) * 100;
+                      const newValue = Math.max(10000, Math.min(200000, 10000 + (percentage / 100) * 190000));
+                      const steppedValue = Math.round(newValue / 5000) * 5000;
+                      const newMin = Math.min(steppedValue, userDemographics.incomeRange[1] - 5000);
+                      
+                      if (newMin !== userDemographics.incomeRange[0]) {
+                        handleDemographicsChange('incomeRange', [newMin, userDemographics.incomeRange[1]]);
+                      }
+                    };
+                    
+                    const handleMouseUp = () => {
+                      document.removeEventListener('mousemove', handleMouseMove);
+                      document.removeEventListener('mouseup', handleMouseUp);
+                    };
+                    
+                    document.addEventListener('mousemove', handleMouseMove);
+                    document.addEventListener('mouseup', handleMouseUp);
                   }}
-                  className="absolute top-1/2 left-0 w-full h-6 opacity-0 cursor-pointer transform -translate-y-1/2"
-                  style={{ zIndex: userDemographics.incomeRange[1] < userDemographics.incomeRange[0] + 10000 ? 5 : 3 }}
-                />
+                >
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                    ₹{userDemographics.incomeRange[0].toLocaleString('en-IN')}
+                  </div>
+                </div>
                 
-                {/* Handle indicators */}
+                {/* Max handle - Enhanced for better interaction */}
                 <div 
-                  className="absolute w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-lg transform -translate-y-1/2 cursor-pointer hover:bg-blue-600 transition-colors"
-                  style={{ left: `calc(${((userDemographics.incomeRange[0] - 10000) / (200000 - 10000)) * 100}% - 12px)` }}
-                ></div>
-                <div 
-                  className="absolute w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-lg transform -translate-y-1/2 cursor-pointer hover:bg-blue-600 transition-colors"
-                  style={{ left: `calc(${((userDemographics.incomeRange[1] - 10000) / (200000 - 10000)) * 100}% - 12px)` }}
-                ></div>
+                  className="absolute w-8 h-8 bg-blue-500 rounded-full border-4 border-white shadow-xl transform -translate-y-1/2 cursor-grab active:cursor-grabbing hover:scale-110 transition-all duration-200 hover:bg-blue-600"
+                  style={{ left: `calc(${((userDemographics.incomeRange[1] - 10000) / (200000 - 10000)) * 100}% - 16px)` }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    const startX = e.clientX;
+                    const startValue = userDemographics.incomeRange[1];
+                    
+                    const handleMouseMove = (e: MouseEvent) => {
+                      const rect = e.currentTarget.parentElement?.getBoundingClientRect();
+                      if (!rect) return;
+                      
+                      const percentage = ((e.clientX - rect.left) / rect.width) * 100;
+                      const newValue = Math.max(10000, Math.min(200000, 10000 + (percentage / 100) * 190000));
+                      const steppedValue = Math.round(newValue / 5000) * 5000;
+                      const newMax = Math.max(steppedValue, userDemographics.incomeRange[0] + 5000);
+                      
+                      if (newMax !== userDemographics.incomeRange[1]) {
+                        handleDemographicsChange('incomeRange', [userDemographics.incomeRange[0], newMax]);
+                      }
+                    };
+                    
+                    const handleMouseUp = () => {
+                      document.removeEventListener('mousemove', handleMouseMove);
+                      document.removeEventListener('mouseup', handleMouseUp);
+                    };
+                    
+                    document.addEventListener('mousemove', handleMouseMove);
+                    document.addEventListener('mouseup', handleMouseUp);
+                  }}
+                >
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                    ₹{userDemographics.incomeRange[1].toLocaleString('en-IN')}
+                  </div>
+                </div>
               </div>
               
               {/* Range labels */}
@@ -399,7 +434,7 @@ const ResearchSetup: React.FC<ResearchSetupProps> = ({ project, onSetupComplete 
               </div>
             </div>
           </div>
-
+          
           {/* Credit Score Range Dual Slider */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -458,7 +493,7 @@ const ResearchSetup: React.FC<ResearchSetupProps> = ({ project, onSetupComplete 
                   className="absolute w-6 h-6 bg-purple-500 rounded-full border-2 border-white shadow-lg transform -translate-y-1/2 cursor-pointer hover:bg-purple-600 transition-colors"
                   style={{ left: `calc(${((userDemographics.creditScoreRange[1] - 300) / (850 - 300)) * 100}% - 12px)` }}
                 ></div>
-              </div>
+                </div>
               
               {/* Range labels */}
               <div className="flex justify-between text-xs text-gray-500 mt-2">
@@ -466,10 +501,10 @@ const ResearchSetup: React.FC<ResearchSetupProps> = ({ project, onSetupComplete 
                 <span>850</span>
               </div>
             </div>
-          </div>
+        </div>
 
           {/* Occupation Multi-select */}
-          <div>
+        <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Occupation</label>
             <div className="grid grid-cols-2 gap-2">
               {['Software Engineer', 'Business Professional', 'Entrepreneur', 'Doctor', 'Teacher', 'Banker', 'Consultant', 'Other'].map((occupation) => (
@@ -491,9 +526,9 @@ const ResearchSetup: React.FC<ResearchSetupProps> = ({ project, onSetupComplete 
               ))}
             </div>
           </div>
-
+          
           {/* Employment Type Multi-select */}
-          <div>
+            <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Employment Type</label>
             <div className="space-y-2">
               {['Salaried', 'Self-Employed', 'Freelancer', 'Business Owner', 'Student', 'Retired'].map((type) => (
@@ -514,10 +549,10 @@ const ResearchSetup: React.FC<ResearchSetupProps> = ({ project, onSetupComplete 
                 </label>
               ))}
             </div>
-          </div>
-
+            </div>
+            
           {/* Education Multi-select */}
-          <div>
+            <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Education Level</label>
             <div className="space-y-2">
               {['High School', 'Diploma', 'Graduate', 'Post-Graduate', 'PhD', 'Professional Degree'].map((edu) => (
@@ -538,10 +573,10 @@ const ResearchSetup: React.FC<ResearchSetupProps> = ({ project, onSetupComplete 
                 </label>
               ))}
             </div>
-          </div>
-
+            </div>
+            
           {/* Location Multi-select */}
-          <div>
+            <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Target Locations</label>
             <div className="grid grid-cols-2 gap-2">
               {['Bengaluru', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad', 'Pune', 'Kolkata', 'Ahmedabad'].map((location) => (
@@ -597,7 +632,7 @@ const ResearchSetup: React.FC<ResearchSetupProps> = ({ project, onSetupComplete 
             </div>
           ))}
         </div>
-      </div>
+            </div>
 
       {/* Research Objectives and Questions */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">

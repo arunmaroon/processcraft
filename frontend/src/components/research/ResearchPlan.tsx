@@ -452,11 +452,11 @@ const ResearchPlan: React.FC<ResearchPlanProps> = ({ project, onPlanCreated, prd
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Select income level</option>
-                  <option value="Low">Low (₹0-3L)</option>
-                  <option value="Lower-middle">Lower-middle (₹3L-5L)</option>
-                  <option value="Middle">Middle (₹5L-7.5L)</option>
-                  <option value="Upper-middle">Upper-middle (₹7.5L-10L)</option>
-                  <option value="High">High (₹10L+)</option>
+                  <option value="Low">Low (0-3L)</option>
+                  <option value="Lower-middle">Lower-middle (3L-5L)</option>
+                  <option value="Middle">Middle (5L-7.5L)</option>
+                  <option value="Upper-middle">Upper-middle (7.5L-10L)</option>
+                  <option value="High">High (10L+)</option>
                   <option value="Mixed">Mixed</option>
                 </select>
               </div>

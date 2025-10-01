@@ -82,7 +82,7 @@ export default function ConfigOrganizer({ onConfigsUpdated }: ConfigOrganizerPro
             ageRange: [25, 35],
             gender: ['All'],
             location: ['Global'],
-            income: ['$50K-$100K'],
+            income: ['₹5L-₹10L'],
             education: ['Bachelor\'s Degree']
           }
         ]);
@@ -96,7 +96,7 @@ export default function ConfigOrganizer({ onConfigsUpdated }: ConfigOrganizerPro
               ageRange: [25, 35],
               gender: ['All'],
               location: ['Global'],
-              income: ['$50K-$100K'],
+              income: ['₹5L-₹10L'],
               education: ['Bachelor\'s Degree']
             },
             size: 1000,
@@ -143,7 +143,7 @@ export default function ConfigOrganizer({ onConfigsUpdated }: ConfigOrganizerPro
             ageRange: [25, 35],
             gender: ['All'],
             location: ['Global'],
-            income: ['$50K-$100K'],
+            income: ['₹5L-₹10L'],
             education: ['Bachelor\'s Degree']
           },
           size: 1000,

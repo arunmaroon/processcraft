@@ -49,6 +49,10 @@ const DiscussionGuide: React.FC<DiscussionGuideProps> = ({
   const [editQuestionText, setEditQuestionText] = useState('');
   const [editPromptText, setEditPromptText] = useState('');
   const [userPrompt, setUserPrompt] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [isFinalized, setIsFinalized] = useState(false);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
 
   const generateGuide = async () => {
     setIsGenerating(true);
@@ -62,7 +66,7 @@ const DiscussionGuide: React.FC<DiscussionGuideProps> = ({
         body: JSON.stringify({
           researchPlan,
           prdData,
-          userPrompt: userPrompt || 'Generate a comprehensive discussion guide'
+          userPrompt: userPrompt || 'Generate a comprehensive discussion guide based on PRD and Research Plan'
         }),
       });
 
@@ -73,15 +77,76 @@ const DiscussionGuide: React.FC<DiscussionGuideProps> = ({
       const data = await response.json();
       setGuideData(data);
       onGuideGenerated(data);
+      setIsEditing(true); // Allow editing after generation
     } catch (error) {
       console.error('Error generating discussion guide:', error);
       // Generate fallback guide if API fails
       const fallbackGuide = generateFallbackGuide();
       setGuideData(fallbackGuide);
       onGuideGenerated(fallbackGuide);
+      setIsEditing(true);
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleEditField = (field: string, currentValue: any) => {
+    setEditingField(field);
+    setEditValue(Array.isArray(currentValue) ? currentValue.join('\n') : currentValue || '');
+  };
+
+  const handleSaveField = () => {
+    if (!guideData || !editingField) return;
+
+    const updatedGuide = { ...guideData };
+    const value = editingField.includes('[]') ? editValue.split('\n').filter(line => line.trim()) : editValue;
+
+    if (editingField.includes('.')) {
+      const [parent, child] = editingField.split('.');
+      updatedGuide[parent as keyof DiscussionGuideData] = {
+        ...(updatedGuide[parent as keyof DiscussionGuideData] as any),
+        [child]: value
+      };
+    } else {
+      (updatedGuide as any)[editingField] = value;
+    }
+
+    setGuideData(updatedGuide);
+    setEditingField(null);
+    setEditValue('');
+  };
+
+  const handleFinalize = () => {
+    setIsFinalized(true);
+    setIsEditing(false);
+    onGuideCompleted(guideData);
+  };
+
+  const handleAddQuestion = () => {
+    if (!guideData) return;
+
+    const newQuestion = {
+      id: (guideData.questions.length + 1).toString(),
+      section: 'Custom',
+      question: 'New question',
+      followUp: 'Follow-up question',
+      category: 'Custom',
+      objectives: ['Custom objective']
+    };
+
+    setGuideData({
+      ...guideData,
+      questions: [...guideData.questions, newQuestion]
+    });
+  };
+
+  const handleDeleteQuestion = (questionId: string) => {
+    if (!guideData) return;
+
+    setGuideData({
+      ...guideData,
+      questions: guideData.questions.filter(q => q.id !== questionId)
+    });
   };
 
   const generateFallbackGuide = (): DiscussionGuideData => {
@@ -328,22 +393,52 @@ const DiscussionGuide: React.FC<DiscussionGuideProps> = ({
           <div className="px-6 py-4 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <MessageSquare className="w-6 h-6 text-green-600" />
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  isFinalized ? 'bg-green-100' : isEditing ? 'bg-blue-100' : 'bg-green-100'
+                }`}>
+                  <MessageSquare className={`w-6 h-6 ${
+                    isFinalized ? 'text-green-600' : isEditing ? 'text-blue-600' : 'text-green-600'
+                  }`} />
                 </div>
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">{guideData.title}</h3>
-                  <p className="text-sm text-gray-500">Generated on {new Date(guideData.generatedAt).toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-500">
+                    Generated on {new Date(guideData.generatedAt).toLocaleDateString()}
+                    {isFinalized && ' • Finalized'}
+                    {isEditing && ' • Editing Mode'}
+                  </p>
                 </div>
               </div>
               <div className="flex space-x-2">
-                <button
-                  onClick={generateGuide}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center space-x-2 transition-colors"
-                >
-                  <Brain className="w-4 h-4" />
-                  <span>Regenerate</span>
-                </button>
+                {!isFinalized && (
+                  <>
+                    <button
+                      onClick={() => setIsEditing(!isEditing)}
+                      className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors ${
+                        isEditing 
+                          ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      <span>{isEditing ? 'View Mode' : 'Edit'}</span>
+                    </button>
+                    <button
+                      onClick={generateGuide}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center space-x-2 transition-colors"
+                    >
+                      <Brain className="w-4 h-4" />
+                      <span>Regenerate</span>
+                    </button>
+                    <button
+                      onClick={handleFinalize}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2 transition-colors"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      <span>Finalize</span>
+                    </button>
+                  </>
+                )}
                 <button
                   onClick={handleCompleted}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2 transition-colors"
@@ -359,25 +454,116 @@ const DiscussionGuide: React.FC<DiscussionGuideProps> = ({
 
           {/* Project Overview */}
           <div className="mb-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">Project Overview</h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-lg font-semibold text-gray-900">Project Overview</h4>
+              {isEditing && (
+                <button
+                  onClick={() => handleEditField('title', guideData.title)}
+                  className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  <span>Edit</span>
+                </button>
+              )}
+            </div>
             <div className="bg-blue-50 rounded-lg p-4 mb-4">
-              <h5 className="font-medium text-blue-900 mb-2">{guideData.projectName}</h5>
+              <div className="flex items-center justify-between mb-2">
+                <h5 className="font-medium text-blue-900">
+                  {editingField === 'projectName' ? (
+                    <input
+                      type="text"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onBlur={handleSaveField}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSaveField()}
+                      className="bg-transparent border-b border-blue-300 focus:outline-none focus:border-blue-500"
+                    />
+                  ) : (
+                    guideData.projectName
+                  )}
+                </h5>
+                {isEditing && editingField !== 'projectName' && (
+                  <button
+                    onClick={() => handleEditField('projectName', guideData.projectName)}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
               <div className="space-y-2">
                 <div>
                   <span className="font-medium text-blue-800">Objectives:</span>
-                  <ul className="list-disc list-inside text-blue-700 ml-2">
-                    {guideData.objectives?.map((objective, index) => (
-                      <li key={index}>{objective}</li>
-                    )) || []}
-                  </ul>
+                  {editingField === 'objectives[]' ? (
+                    <textarea
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onBlur={handleSaveField}
+                      className="w-full mt-1 px-2 py-1 border border-blue-300 rounded focus:outline-none focus:border-blue-500"
+                      rows={3}
+                    />
+                  ) : (
+                    <ul className="list-disc list-inside text-blue-700 ml-2">
+                      {guideData.objectives?.map((objective, index) => (
+                        <li key={index}>{objective}</li>
+                      )) || []}
+                    </ul>
+                  )}
+                  {isEditing && editingField !== 'objectives[]' && (
+                    <button
+                      onClick={() => handleEditField('objectives[]', guideData.objectives)}
+                      className="text-blue-600 hover:text-blue-800 ml-2"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 <div>
                   <span className="font-medium text-blue-800">Methodology:</span>
-                  <span className="text-blue-700 ml-2">{guideData.methodology}</span>
+                  {editingField === 'methodology' ? (
+                    <input
+                      type="text"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onBlur={handleSaveField}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSaveField()}
+                      className="ml-2 bg-transparent border-b border-blue-300 focus:outline-none focus:border-blue-500"
+                    />
+                  ) : (
+                    <span className="text-blue-700 ml-2">{guideData.methodology}</span>
+                  )}
+                  {isEditing && editingField !== 'methodology' && (
+                    <button
+                      onClick={() => handleEditField('methodology', guideData.methodology)}
+                      className="text-blue-600 hover:text-blue-800 ml-2"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
-            <p className="text-gray-700 leading-relaxed">{guideData.introduction}</p>
+            <div className="flex items-start justify-between">
+              {editingField === 'introduction' ? (
+                <textarea
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={handleSaveField}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                />
+              ) : (
+                <p className="text-gray-700 leading-relaxed">{guideData.introduction}</p>
+              )}
+              {isEditing && editingField !== 'introduction' && (
+                <button
+                  onClick={() => handleEditField('introduction', guideData.introduction)}
+                  className="text-blue-600 hover:text-blue-800 ml-2 mt-1"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Moderator Notes */}
@@ -412,7 +598,18 @@ const DiscussionGuide: React.FC<DiscussionGuideProps> = ({
 
           {/* Questions */}
           <div className="mb-8">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">Discussion Questions</h4>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-semibold text-gray-900">Discussion Questions</h4>
+              {isEditing && (
+                <button
+                  onClick={handleAddQuestion}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 text-sm"
+                >
+                  <span>+</span>
+                  <span>Add Question</span>
+                </button>
+              )}
+            </div>
             <div className="space-y-6">
               {guideData.questions?.map((question, index) => (
                 <div key={question.id} className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
@@ -430,12 +627,26 @@ const DiscussionGuide: React.FC<DiscussionGuideProps> = ({
                         </span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleQuestionEdit(question.id, question.question)}
-                      className="text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
+                    <div className="flex space-x-2">
+                      {isEditing && (
+                        <>
+                          <button
+                            onClick={() => handleQuestionEdit(question.id, question.question)}
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            title="Edit question"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteQuestion(question.id)}
+                            className="text-red-600 hover:text-red-800 transition-colors"
+                            title="Delete question"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 
                   {editingQuestion === question.id ? (

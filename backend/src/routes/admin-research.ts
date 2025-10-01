@@ -2,315 +2,344 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { adminResearchService } from '../services/adminResearchService';
+import { v4 as uuidv4 } from 'uuid';
+import grokResearchService from '../services/grokResearchService';
 
 const router = express.Router();
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '../../uploads/research-documents');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(process.cwd(), 'data', 'training');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    const uniqueName = `${uuidv4()}-${file.originalname}`;
+    cb(null, uniqueName);
   }
 });
 
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['.csv', '.json', '.pdf', '.txt', '.xlsx'];
-    const allowedMimeTypes = [
-      'text/csv',
-      'application/json',
-      'application/pdf',
-      'text/plain',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel'
-    ];
+    const allowedTypes = ['.csv', '.json', '.pdf', '.txt', '.xlsx', '.docx'];
+    
+    // Handle case where originalname might be null or undefined
+    if (!file.originalname) {
+      console.log('File upload attempt: originalname is null/undefined');
+      return cb(new Error('File name is required'));
+    }
     
     const ext = path.extname(file.originalname).toLowerCase();
-    const mimeType = file.mimetype;
+    console.log('File upload attempt:', file.originalname, 'Extension:', ext);
     
-    console.log('File validation:', { originalname: file.originalname, ext, mimeType });
-    
-    if (allowedTypes.includes(ext) || allowedMimeTypes.includes(mimeType)) {
+    if (allowedTypes.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error(`Invalid file type. Only CSV, JSON, PDF, TXT, and XLSX files are allowed. Got: ${ext} (${mimeType})`));
+      console.log('File type rejected:', ext, 'Allowed types:', allowedTypes);
+      cb(new Error('Invalid file type. Only CSV, JSON, PDF, TXT, XLSX, and DOCX files are allowed.'));
     }
   }
 });
 
-// Admin login
-router.post('/login', async (req, res) => {
-  try {
-    const { passcode } = req.body;
-    
-    if (passcode === process.env.ADMIN_PASSCODE || passcode === 'admin123') {
-      const token = 'admin_token_' + Date.now();
-      res.json({ 
-        success: true, 
-        token,
-        message: 'Admin access granted'
-      });
-    } else {
-      res.status(401).json({ 
-        success: false, 
-        message: 'Invalid passcode' 
-      });
-    }
-  } catch (error) {
-    console.error('Admin login error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error' 
-    });
-  }
-});
+// Store uploaded documents metadata
+let uploadedDocuments: any[] = [];
 
-// Upload research data
-router.post('/upload', upload.array('files'), async (req, res) => {
+// Upload documents endpoint
+router.post('/upload', upload.array('files', 10), async (req, res) => {
   try {
     const files = req.files as Express.Multer.File[];
     
     if (!files || files.length === 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'No files uploaded' 
-      });
+      return res.status(400).json({ error: 'No files uploaded' });
     }
 
-    const uploadResults = await adminResearchService.processUploads(files);
-    
+    const uploadedFiles = files.map(file => ({
+      id: uuidv4(),
+      originalName: file.originalname,
+      filename: file.filename,
+      path: file.path,
+      size: file.size,
+      mimetype: file.mimetype,
+      uploadedAt: new Date().toISOString(),
+      status: 'uploaded'
+    }));
+
+    // Add to stored documents
+    uploadedDocuments.push(...uploadedFiles);
+
     res.json({
       success: true,
       message: `${files.length} file(s) uploaded successfully`,
-      files: uploadResults
+      files: uploadedFiles
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Upload error:', error);
     res.status(500).json({ 
-      success: false, 
-      message: 'Upload failed' 
+      error: error.message || 'Upload failed',
+      success: false 
     });
   }
 });
 
-// Synthesize insights
+// Get all uploaded documents
+router.get('/documents', (req, res) => {
+  try {
+    res.json({
+      success: true,
+      documents: uploadedDocuments
+    });
+  } catch (error: any) {
+    console.error('Get documents error:', error);
+    res.status(500).json({ 
+      error: error.message || 'Failed to fetch documents',
+      success: false 
+    });
+  }
+});
+
+// Delete a document
+router.delete('/documents/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const documentIndex = uploadedDocuments.findIndex(doc => doc.id === id);
+    
+    if (documentIndex === -1) {
+      return res.status(404).json({ 
+        error: 'Document not found',
+        success: false 
+      });
+    }
+
+    const document = uploadedDocuments[documentIndex];
+    
+    // Delete file from filesystem
+    if (fs.existsSync(document.path)) {
+      fs.unlinkSync(document.path);
+    }
+
+    // Remove from stored documents
+    uploadedDocuments.splice(documentIndex, 1);
+
+    res.json({
+      success: true,
+      message: 'Document deleted successfully'
+    });
+  } catch (error: any) {
+    console.error('Delete document error:', error);
+    res.status(500).json({ 
+      error: error.message || 'Failed to delete document',
+      success: false 
+    });
+  }
+});
+
+// Preview document content
+router.get('/documents/:id/preview', (req, res) => {
+  try {
+    const { id } = req.params;
+    const document = uploadedDocuments.find(doc => doc.id === id);
+    
+    if (!document) {
+      return res.status(404).json({ 
+        error: 'Document not found',
+        success: false 
+      });
+    }
+
+    // Read document content for preview
+    let content = '';
+    try {
+      if (document.mimetype === 'text/plain' || document.mimetype === 'application/json') {
+        content = fs.readFileSync(document.path, 'utf8');
+      } else if (document.mimetype === 'text/csv') {
+        content = fs.readFileSync(document.path, 'utf8');
+      } else {
+        content = `Preview not available for ${document.mimetype} files.`;
+      }
+    } catch (readError) {
+      content = `Error reading file: ${readError}`;
+    }
+
+    res.json({
+      success: true,
+      id: document.id,
+      name: document.originalName,
+      type: document.mimetype,
+      size: document.size,
+      content: content.substring(0, 5000), // Limit preview to 5000 characters
+      isPreview: true
+    });
+  } catch (error: any) {
+    console.error('Preview document error:', error);
+    res.status(500).json({ 
+      error: error.message || 'Failed to preview document',
+      success: false 
+    });
+  }
+});
+
+// Generate agent response using Grok
+router.post('/generate-agent-response', async (req, res) => {
+  try {
+    const { message, agent } = req.body;
+
+    if (!message || !agent) {
+      return res.status(400).json({ 
+        error: 'Message and agent data are required',
+        success: false 
+      });
+    }
+
+    // Use Grok to generate response based on enhanced agent context
+    const response = await grokResearchService.generateAgentResponse(message, agent);
+    
+    res.json({
+      success: true,
+      response: response
+    });
+  } catch (error: any) {
+    console.error('Error generating agent response:', error);
+    res.status(500).json({ 
+      error: error.message || 'Failed to generate agent response',
+      success: false 
+    });
+  }
+});
+
+// Process documents with Grok
+router.post('/process-documents', async (req, res) => {
+  try {
+    const { fileIds, action } = req.body;
+    
+    if (!fileIds || fileIds.length === 0) {
+      return res.status(400).json({ 
+        error: 'No file IDs provided',
+        success: false 
+      });
+    }
+
+    // Get documents by IDs
+    const documentsToProcess = uploadedDocuments.filter(doc => fileIds.includes(doc.id));
+    
+    if (documentsToProcess.length === 0) {
+      return res.status(404).json({ 
+        error: 'No documents found with provided IDs',
+        success: false 
+      });
+    }
+
+    // Read document contents
+    const documentContents = [];
+    for (const doc of documentsToProcess) {
+      try {
+        let content = '';
+        if (doc.mimetype === 'text/plain' || doc.mimetype === 'application/json') {
+          content = fs.readFileSync(doc.path, 'utf8');
+        } else if (doc.mimetype === 'text/csv') {
+          content = fs.readFileSync(doc.path, 'utf8');
+        } else {
+          // For PDF and other binary files, we'll need additional processing
+          content = `[Binary file: ${doc.originalName}]`;
+        }
+        
+        documentContents.push({
+          filename: doc.originalName,
+          content: content,
+          type: doc.mimetype
+        });
+      } catch (readError) {
+        console.error(`Error reading file ${doc.originalName}:`, readError);
+        documentContents.push({
+          filename: doc.originalName,
+          content: `[Error reading file: ${readError}]`,
+          type: doc.mimetype
+        });
+      }
+    }
+
+    if (action === 'generate_agents') {
+      // Generate AI agents based on documents
+      const agents = await grokResearchService.generateAgentsFromDocuments(documentContents);
+      
+      res.json({
+        success: true,
+        message: 'Documents processed successfully',
+        agents: agents,
+        processedDocuments: documentsToProcess.length
+      });
+    } else {
+      // Default processing
+      res.json({
+        success: true,
+        message: 'Documents processed successfully',
+        processedDocuments: documentsToProcess.length,
+        contents: documentContents
+      });
+    }
+  } catch (error: any) {
+    console.error('Process documents error:', error);
+    res.status(500).json({ 
+      error: error.message || 'Failed to process documents',
+      success: false 
+    });
+  }
+});
+
+// Generate insights from documents
 router.post('/synthesize', async (req, res) => {
   try {
-    const insights = await adminResearchService.synthesizeInsights();
+    // Get all uploaded documents
+    const documentContents = [];
+    for (const doc of uploadedDocuments) {
+      try {
+        let content = '';
+        if (doc.mimetype === 'text/plain' || doc.mimetype === 'application/json') {
+          content = fs.readFileSync(doc.path, 'utf8');
+        } else if (doc.mimetype === 'text/csv') {
+          content = fs.readFileSync(doc.path, 'utf8');
+        } else {
+          content = `[Binary file: ${doc.originalName}]`;
+        }
+        
+        documentContents.push({
+          filename: doc.originalName,
+          content: content,
+          type: doc.mimetype
+        });
+      } catch (readError) {
+        console.error(`Error reading file ${doc.originalName}:`, readError);
+      }
+    }
+
+    if (documentContents.length === 0) {
+      return res.status(400).json({ 
+        error: 'No documents available for synthesis',
+        success: false 
+      });
+    }
+
+    // Generate insights using Grok
+    const insights = await grokResearchService.generateInsightsFromDocuments(documentContents);
     
     res.json({
       success: true,
-      message: 'Insights synthesized successfully',
-      insights
+      insights: insights
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Synthesis error:', error);
     res.status(500).json({ 
-      success: false, 
-      message: 'Synthesis failed' 
+      error: error.message || 'Failed to generate insights',
+      success: false 
     });
-  }
-});
-
-// Organize configurations
-router.post('/organize-configs', async (req, res) => {
-  try {
-    const { personas, demographics, cohorts } = req.body;
-    
-    await adminResearchService.saveConfigs({ personas, demographics, cohorts });
-    
-    res.json({
-      success: true,
-      message: 'Configurations saved successfully'
-    });
-  } catch (error) {
-    console.error('Config save error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Save failed' 
-    });
-  }
-});
-
-// Map products
-router.post('/map-products', async (req, res) => {
-  try {
-    const { mappings } = req.body;
-    
-    await adminResearchService.saveMappings(mappings);
-    
-    res.json({
-      success: true,
-      message: 'Product mappings saved successfully'
-    });
-  } catch (error) {
-    console.error('Mapping save error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Save failed' 
-    });
-  }
-});
-
-// Build agents
-router.post('/build-agents', async (req, res) => {
-  try {
-    const agents = await adminResearchService.buildAgents();
-    
-    res.json({
-      success: true,
-      message: 'Agents built successfully',
-      agents
-    });
-  } catch (error) {
-    console.error('Agent building error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Agent building failed' 
-    });
-  }
-});
-
-// Check bias
-router.post('/check-bias', async (req, res) => {
-  try {
-    const issues = await adminResearchService.checkBias();
-    
-    res.json({
-      success: true,
-      message: 'Bias check completed',
-      issues
-    });
-  } catch (error) {
-    console.error('Bias check error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Bias check failed' 
-    });
-  }
-});
-
-// Preview agent
-router.post('/preview-agent', async (req, res) => {
-  try {
-    const { agentId, message } = req.body;
-    
-    const response = await adminResearchService.previewAgent(agentId, message);
-    
-    res.json({
-      success: true,
-      response
-    });
-  } catch (error) {
-    console.error('Agent preview error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Agent preview failed' 
-    });
-  }
-});
-
-// Test agent
-router.post('/test-agent', async (req, res) => {
-  try {
-    const { agentId } = req.body;
-    
-    const result = await adminResearchService.testAgent(agentId);
-    
-    res.json({
-      success: true,
-      accuracy: result.accuracy,
-      message: 'Agent test completed'
-    });
-  } catch (error) {
-    console.error('Agent test error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Agent test failed' 
-    });
-  }
-});
-
-// Get all data
-router.get('/insights', async (req, res) => {
-  try {
-    const insights = await adminResearchService.getInsights();
-    res.json(insights);
-  } catch (error) {
-    console.error('Get insights error:', error);
-    res.status(500).json({ message: 'Failed to load insights' });
-  }
-});
-
-router.get('/configs', async (req, res) => {
-  try {
-    const configs = await adminResearchService.getConfigs();
-    res.json(configs);
-  } catch (error) {
-    console.error('Get configs error:', error);
-    res.status(500).json({ message: 'Failed to load configs' });
-  }
-});
-
-router.get('/mappings', async (req, res) => {
-  try {
-    const mappings = await adminResearchService.getMappings();
-    res.json(mappings);
-  } catch (error) {
-    console.error('Get mappings error:', error);
-    res.status(500).json({ message: 'Failed to load mappings' });
-  }
-});
-
-router.get('/agents', async (req, res) => {
-  try {
-    const agents = await adminResearchService.getAgents();
-    res.json(agents);
-  } catch (error) {
-    console.error('Get agents error:', error);
-    res.status(500).json({ message: 'Failed to load agents' });
-  }
-});
-
-router.get('/bias-issues', async (req, res) => {
-  try {
-    const issues = await adminResearchService.getBiasIssues();
-    res.json(issues);
-  } catch (error) {
-    console.error('Get bias issues error:', error);
-    res.status(500).json({ message: 'Failed to load bias issues' });
-  }
-});
-
-// Settings endpoints
-router.get('/settings', async (req, res) => {
-  try {
-    const settings = await adminResearchService.getSettings();
-    res.json(settings);
-  } catch (error) {
-    console.error('Get settings error:', error);
-    res.status(500).json({ message: 'Failed to load settings' });
-  }
-});
-
-router.post('/settings', async (req, res) => {
-  try {
-    const settings = req.body;
-    await adminResearchService.saveSettings(settings);
-    res.json({ success: true, message: 'Settings saved successfully' });
-  } catch (error) {
-    console.error('Save settings error:', error);
-    res.status(500).json({ success: false, message: 'Failed to save settings' });
   }
 });
 

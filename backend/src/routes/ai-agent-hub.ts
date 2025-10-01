@@ -275,7 +275,7 @@ const generateSingleAgent = async (files: UploadedFile[], index: number): Promis
   const ages = ['25-30', '31-35', '36-40', '41-45', '46-50', '51-55', '56-60'];
   const genders = ['Female', 'Male', 'Non-binary'];
   const locations = ['New York, NY', 'San Francisco, CA', 'Austin, TX', 'Seattle, WA', 'Boston, MA', 'Chicago, IL'];
-  const incomes = ['$30k-50k', '$50k-75k', '$75k-100k', '$100k-150k', '$150k+'];
+  const incomes = ['₹3L-5L', '₹5L-7.5L', '₹7.5L-10L', '₹10L-15L', '₹15L+'];
   const educations = ['High School', 'Associate', 'Bachelor\'s', 'Master\'s', 'PhD'];
   const occupations = [
     'Software Engineer', 'Marketing Manager', 'Teacher', 'Nurse', 'Sales Rep',

@@ -244,7 +244,7 @@ export default function StrategicPRDSetup({ project, prd, onPRDUpdate, onGenerat
                   value={strategicData.marketSize}
                   onChange={(e) => updateStrategicData('marketSize', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="e.g., $50B TAM, $5B SAM, $500M SOM"
+                  placeholder="e.g., ₹50,000Cr TAM, ₹5,000Cr SAM, ₹500Cr SOM"
                 />
               </div>
 
@@ -696,7 +696,7 @@ export default function StrategicPRDSetup({ project, prd, onPRDUpdate, onGenerat
                   value={strategicData.budget}
                   onChange={(e) => updateStrategicData('budget', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="e.g., $500K for MVP, $2M for full product"
+                  placeholder="e.g., ₹50L for MVP, ₹2Cr for full product"
                 />
               </div>
 

@@ -26,10 +26,11 @@ export default function ProjectManager() {
   const { state, createProject, deleteProject } = useApp();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<ProjectStatus | 'ALL'>('ALL');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const filteredProjects = state.projects.filter(project => {
+  const filteredProjects = (state.projects || []).filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          project.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
@@ -51,6 +52,7 @@ export default function ProjectManager() {
         assignedUsers: {
           PM: [state.user?.id || '1'],
         },
+        approvals: [],
         prd: {
           id: `prd-${Date.now()}`,
           objectives: projectData.objectives,
@@ -331,14 +333,14 @@ function CreateProjectModal({ onClose, onSubmit }: CreateProjectModalProps) {
   const updateArrayItem = (field: 'objectives' | 'targetUsers' | 'successMetrics', index: number, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: prev[field].map((item, i) => i === index ? value : item)
+      [field]: (prev[field] || []).map((item, i) => i === index ? value : item)
     }));
   };
 
   const removeArrayItem = (field: 'objectives' | 'targetUsers' | 'successMetrics', index: number) => {
     setFormData(prev => ({
       ...prev,
-      [field]: prev[field].filter((_, i) => i !== index)
+      [field]: (prev[field] || []).filter((_, i) => i !== index)
     }));
   };
 
@@ -382,7 +384,7 @@ function CreateProjectModal({ onClose, onSubmit }: CreateProjectModalProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Objectives
             </label>
-            {formData.objectives.map((objective, index) => (
+            {(formData.objectives || []).map((objective, index) => (
               <div key={index} className="flex space-x-2 mb-2">
                 <input
                   type="text"
@@ -415,7 +417,7 @@ function CreateProjectModal({ onClose, onSubmit }: CreateProjectModalProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Target Users
             </label>
-            {formData.targetUsers.map((user, index) => (
+            {(formData.targetUsers || []).map((user, index) => (
               <div key={index} className="flex space-x-2 mb-2">
                 <input
                   type="text"
@@ -448,7 +450,7 @@ function CreateProjectModal({ onClose, onSubmit }: CreateProjectModalProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Success Metrics
             </label>
-            {formData.successMetrics.map((metric, index) => (
+            {(formData.successMetrics || []).map((metric, index) => (
               <div key={index} className="flex space-x-2 mb-2">
                 <input
                   type="text"

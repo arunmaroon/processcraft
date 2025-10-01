@@ -724,7 +724,7 @@ function generateMockCohorts(product: string, demographics: any) {
         ageRange: [25, 35],
         gender: ['All'],
         location: ['Global'],
-        income: ['$75K+'],
+        income: ['₹7.5L+'],
         education: ['Bachelor\'s Degree+']
       },
       size: 200
@@ -737,7 +737,7 @@ function generateMockCohorts(product: string, demographics: any) {
         ageRange: [30, 50],
         gender: ['All'],
         location: ['Global'],
-        income: ['$50K-$100K'],
+        income: ['₹5L-₹10L'],
         education: ['High School+']
       },
       size: 500

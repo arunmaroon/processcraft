@@ -59,8 +59,8 @@ export default function BiasChecker({ onBiasChecked }: BiasCheckerProps) {
             id: '3',
             type: 'INCOME',
             severity: 'HIGH',
-            description: 'Income bias: only $50K-$100K range represented, excluding lower and higher income groups',
-            suggestion: 'Add income ranges $25K-$50K and $100K+ to ensure inclusive representation',
+            description: 'Income bias: only ₹5L-₹10L range represented, excluding lower and higher income groups',
+            suggestion: 'Add income ranges ₹2.5L-₹5L and ₹10L+ to ensure inclusive representation',
             affectedData: ['All Demographics Profiles', 'Primary Users Cohort'],
             confidence: 0.91
           }

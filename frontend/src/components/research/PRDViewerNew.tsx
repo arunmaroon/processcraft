@@ -29,6 +29,7 @@ interface PRDViewerNewProps {
   onEdit?: () => void;
   onFinalize?: () => void;
   onMoveToNext?: () => void;
+  userRole?: string;
 }
 
 const PRDViewerNew: React.FC<PRDViewerNewProps> = ({
@@ -36,7 +37,8 @@ const PRDViewerNew: React.FC<PRDViewerNewProps> = ({
   prd,
   onEdit,
   onFinalize,
-  onMoveToNext
+  onMoveToNext,
+  userRole = 'PM'
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showFullContent, setShowFullContent] = useState(false);
@@ -180,21 +182,33 @@ const PRDViewerNew: React.FC<PRDViewerNewProps> = ({
                 <CheckCircle className="w-4 h-4" />
                 <span>Completed</span>
               </div>
-              <Button
-                onClick={onEdit}
-                variant="outline"
-                leftIcon={<Edit3 className="w-4 h-4" />}
-                className="px-4 py-2"
-              >
-                Edit
-              </Button>
-              <Button
-                onClick={onMoveToNext}
-                leftIcon={<ArrowRight className="w-4 h-4" />}
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg"
-              >
-                Move to Research
-              </Button>
+              {/* Only PM can edit */}
+              {userRole === 'PM' && onEdit && (
+                <Button
+                  onClick={onEdit}
+                  variant="outline"
+                  leftIcon={<Edit3 className="w-4 h-4" />}
+                  className="px-4 py-2"
+                >
+                  Edit
+                </Button>
+              )}
+              {/* Only PM can move to next stage */}
+              {userRole === 'PM' && onMoveToNext && (
+                <Button
+                  onClick={onMoveToNext}
+                  leftIcon={<ArrowRight className="w-4 h-4" />}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg"
+                >
+                  Move to Research
+                </Button>
+              )}
+              {/* Show view-only indicator for non-PM users */}
+              {userRole !== 'PM' && (
+                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  View Only - Only PM can edit
+                </span>
+              )}
             </div>
           </div>
         </div>

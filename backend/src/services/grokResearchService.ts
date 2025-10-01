@@ -31,6 +31,12 @@ interface ResearchReportRequest {
   userPrompt?: string;
 }
 
+interface DocumentContent {
+  filename: string;
+  content: string;
+  type: string;
+}
+
 interface AIResponse {
   success: boolean;
   content: string;
@@ -1142,21 +1148,21 @@ ${researchObjectives.map((obj: any, index: number) => `${index + 1}. ${obj}`).jo
 - **Goals**: Complete tasks quickly and efficiently
 - **Pain Points**: Complex interfaces, slow loading times
 - **Behaviors**: Prefers keyboard shortcuts, minimal clicks
-- **Income**: $50K-$100K annually
+- **Income**: ₹5L-₹10L annually
 
 ### Persona 2: The Cautious User
 - **Demographics**: 25-35 years old, moderate tech experience
 - **Goals**: Feel confident and secure while using the product
 - **Pain Points**: Unclear instructions, fear of making mistakes
 - **Behaviors**: Reads all instructions carefully, seeks help frequently
-- **Income**: $30K-$60K annually
+- **Income**: ₹3L-₹6L annually
 
 ### Persona 3: The Mobile-First User
 - **Demographics**: 20-30 years old, digital native
 - **Goals**: Access information and complete tasks on mobile
 - **Pain Points**: Poor mobile experience, slow mobile performance
 - **Behaviors**: Primarily uses mobile devices, expects app-like experience
-- **Income**: $25K-$50K annually
+- **Income**: ₹2.5L-₹5L annually
 
 ## Themes & Patterns
 
@@ -1286,6 +1292,1084 @@ ${researchObjectives.map((obj: any, index: number) => `${index + 1}. ${obj}`).jo
 *This research report was generated using ProcessCraft AI with advanced fallback generation*
 *Generated on ${new Date().toLocaleDateString()}*
 *Framework: Industry best practices for UX research reporting*`;
+  }
+
+  // Generate AI agents from uploaded documents
+  async generateAgentsFromDocuments(documents: DocumentContent[]): Promise<any[]> {
+    try {
+      const prompt = this.buildAgentGenerationPrompt(documents);
+      
+      const response = await axios.post(`${this.baseURL}/chat/completions`, {
+        model: "grok-3",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert AI agent generator that creates realistic user personas based on research data."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        max_tokens: 4000,
+        temperature: 0.7
+      }, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        httpsAgent: new (require('https').Agent)({ rejectUnauthorized: false })
+      });
+      
+      if (response.data && response.data.choices && response.data.choices.length > 0) {
+        // Parse the response to extract agent data
+        const agents = this.parseAgentResponse(response.data.choices[0].message.content);
+        return agents;
+      } else {
+        throw new Error('Invalid response from Grok API');
+      }
+    } catch (error: any) {
+      console.error('Error generating agents from documents:', error);
+      // Return fallback agents
+      return this.createFallbackAgents(documents);
+    }
+  }
+
+  // Generate insights from uploaded documents
+  async generateInsightsFromDocuments(documents: DocumentContent[]): Promise<any[]> {
+    try {
+      const prompt = this.buildInsightGenerationPrompt(documents);
+      
+      const response = await axios.post(`${this.baseURL}/chat/completions`, {
+        model: "grok-3",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert AI agent generator that creates realistic user personas based on research data."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        max_tokens: 4000,
+        temperature: 0.7
+      }, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        httpsAgent: new (require('https').Agent)({ rejectUnauthorized: false })
+      });
+      
+      if (response.data && response.data.choices && response.data.choices.length > 0) {
+        // Parse the response to extract insights
+        const insights = this.parseInsightResponse(response.data.choices[0].message.content);
+        return insights;
+      } else {
+        throw new Error('Invalid response from Grok API');
+      }
+    } catch (error: any) {
+      console.error('Error generating insights from documents:', error);
+      // Return fallback insights
+      return this.createFallbackInsights(documents);
+    }
+  }
+
+  async generateAgentResponse(message: string, agent: any): Promise<string> {
+    try {
+      if (!this.apiKey || this.apiKey === 'dummy-key') {
+        return this.createFallbackAgentResponse(message, agent);
+      }
+
+      // Disable SSL verification for this request
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+      // Build enhanced prompt based on NN/g research findings
+      const enhancedPrompt = this.buildAgentResponsePrompt(message, agent);
+      
+      const response = await axios.post(`${this.baseURL}/chat/completions`, {
+        model: "grok-3",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert at simulating human behavior based on extensive interview data and behavioral patterns. You create realistic, varied responses that capture the full range of human personality and communication styles."
+          },
+          {
+            role: "user",
+            content: enhancedPrompt
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.8 + (agent.variabilityFactor || 0.1), // Add variability based on NN/g research
+        top_p: 0.9,
+        frequency_penalty: 0.3,
+        presence_penalty: 0.2
+      }, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        httpsAgent: new (require('https').Agent)({ rejectUnauthorized: false })
+      });
+      
+      if (response.data && response.data.choices && response.data.choices.length > 0) {
+        return response.data.choices[0].message.content.trim();
+      } else {
+        throw new Error('Invalid response from Grok API');
+      }
+    } catch (error: any) {
+      console.error('Error generating agent response:', error);
+      // Return fallback response
+      return this.createFallbackAgentResponse(message, agent);
+    }
+  }
+
+  private buildAgentResponsePrompt(message: string, agent: any): string {
+    // Based on NN/g research: Interview-based digital twins perform better than demographic-only models
+    // We'll create a rich contextual prompt that simulates extensive interview data
+    
+    const conversationHistory = agent.conversationHistory ? 
+      agent.conversationHistory.map((msg: any) => `${msg.role}: ${msg.content}`).join('\n') : '';
+
+    return `You are ${agent.name}, a digital twin based on extensive interview data and behavioral patterns.
+
+PERSONAL CONTEXT:
+- Demographics: ${agent.demographics?.ageRange?.[0] || 'Unknown'}-${agent.demographics?.ageRange?.[1] || 'Unknown'} years old, ${agent.demographics?.income || 'Not specified'} income, ${agent.demographics?.location || 'Not specified'}, ${agent.demographics?.occupation || 'Not specified'}
+- Education: ${agent.demographics?.education || 'Not specified'}
+- Family: ${agent.demographics?.familyStatus || 'Not specified'}
+
+BEHAVIORAL PATTERNS (from extensive interviews):
+${(agent.behaviors || []).map((behavior: string) => `- ${behavior}`).join('\n')}
+
+PREFERENCES & VALUES:
+${(agent.preferences || []).map((pref: string) => `- ${pref}`).join('\n')}
+
+PAIN POINTS & CONCERNS:
+${(agent.painPoints || []).map((pain: string) => `- ${pain}`).join('\n')}
+
+PERSONAL GOALS:
+${(agent.goals || []).map((goal: string) => `- ${goal}`).join('\n')}
+
+COMMUNICATION STYLE:
+- ${agent.communicationStyle || 'Not specified'}
+- Tech Savviness: ${agent.techSavviness || 'Not specified'}
+- Confidence Level: ${agent.confidence ? Math.round(agent.confidence * 100) : 50}%
+
+TOOLS & CHANNELS YOU USE:
+${agent.tools ? agent.tools.map((tool: string) => `- ${tool}`).join('\n') : 'Not specified'}
+
+${conversationHistory ? `RECENT CONVERSATION CONTEXT:\n${conversationHistory}\n` : ''}
+
+CONVERSATION CONTEXT:
+You are having a conversation where you need to respond naturally as this person would, based on their extensive behavioral data and interview responses. 
+
+IMPORTANT: 
+- Respond as this specific individual, not as a generic persona
+- Show variability in your responses (don't always give the same type of answer)
+- Be consistent with your established personality and communication style
+- Consider your personal context, goals, and pain points when responding
+- Use appropriate language and tone for your demographic and tech savviness level
+- Keep responses conversational and natural, not robotic
+- Show personality quirks and individual characteristics
+
+User's message: "${message}"
+
+Respond as ${agent.name} would, based on your extensive interview data and behavioral patterns:`;
+  }
+
+  private createFallbackAgentResponse(message: string, agent: any): string {
+    // Create a fallback response based on the agent's characteristics
+    const responses = [
+      `As ${agent.name}, I'd say: "${message}" - that's interesting from my perspective as someone who ${agent.behaviors?.[0]?.toLowerCase() || 'has specific preferences'}.`,
+      `Well, from my experience as ${agent.demographics?.occupation || 'a professional'}, I think "${message}" relates to how I typically ${agent.preferences?.[0]?.toLowerCase() || 'approach things'}.`,
+      `You know, as someone who ${agent.goals?.[0]?.toLowerCase() || 'has specific goals'}, I see "${message}" differently. I usually ${agent.communicationStyle?.toLowerCase() || 'communicate thoughtfully'}.`,
+      `That's a good point about "${message}". In my role as ${agent.demographics?.occupation || 'a professional'}, I often ${agent.behaviors?.[1]?.toLowerCase() || 'handle things differently'}.`,
+      `Interesting perspective on "${message}". From where I sit as someone who ${agent.painPoints?.[0]?.toLowerCase() || 'faces certain challenges'}, I'd approach this by ${agent.preferences?.[1]?.toLowerCase() || 'considering my usual preferences'}.`
+    ];
+    
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  private buildAgentGenerationPrompt(documents: DocumentContent[]): string {
+    const documentSummary = documents.map(doc => 
+      `File: ${doc.filename}\nType: ${doc.type}\nContent: ${doc.content}`
+    ).join('\n\n');
+
+    return `You are an expert user research analyst. Based on the following research documents, create 5 DISTINCT, CONTRASTING, and MUTUALLY EXCLUSIVE AI agents that represent different user personas found in the data.
+
+CRITICAL REQUIREMENTS:
+1. Each agent must be COMPLETELY DIFFERENT from others
+2. Agents should represent OPPOSITE ends of spectrums (tech-savvy vs tech-averse, young vs old, urban vs rural, etc.)
+3. Base each agent on ACTUAL patterns, quotes, and behaviors found in the documents
+4. Make agents REALISTIC and AUTHENTIC to the research data
+5. Each agent should have UNIQUE demographics, behaviors, and pain points
+
+Documents:
+${documentSummary}
+
+Create 5 agents with these contrasting characteristics:
+
+1. TECH-SAVVY URBAN PROFESSIONAL (High tech, high income, urban)
+2. TRADITIONAL RURAL USER (Low tech, traditional, rural/small town)
+3. YOUNG DIGITAL NATIVE (Very young, mobile-first, social media heavy)
+4. MIDDLE-AGED FAMILY PERSON (Balanced tech, family-focused, practical)
+5. SENIOR CITIZEN (Tech-averse, needs assistance, values simplicity)
+
+For each agent, provide this EXACT JSON structure:
+
+{
+  "id": "agent-[number]",
+  "name": "Realistic Name",
+  "persona": "Detailed persona description based on document data",
+  "tagline": "One-line description of this person",
+  "demographics": {
+    "ageRange": [min, max],
+    "income": "Specific income range from documents",
+    "location": "Specific location from documents",
+    "occupation": "Specific occupation from documents",
+    "education": "Education level from documents",
+    "familyStatus": "Family situation from documents",
+    "techSavviness": "Very Low/Low/Medium/High/Very High",
+    "englishLiteracy": "Low/Medium/High"
+  },
+  "behaviors": [
+    "Specific behavior patterns from documents",
+    "Another specific behavior from documents",
+    "More behaviors based on research data"
+  ],
+  "preferences": [
+    "Specific preferences mentioned in documents",
+    "Another preference from research data",
+    "More preferences based on findings"
+  ],
+  "painPoints": [
+    "Specific pain points mentioned in documents",
+    "Another pain point from research data",
+    "More pain points based on findings"
+  ],
+  "goals": [
+    "Specific goals mentioned in documents",
+    "Another goal from research data",
+    "More goals based on findings"
+  ],
+  "communicationStyle": "Specific communication style from documents",
+  "confidence": 0.85,
+  "quote": "Actual quote or paraphrased statement from documents that represents this persona",
+  "background": {
+    "education": "Education details from documents",
+    "workExperience": "Work experience from documents",
+    "family": "Family situation from documents",
+    "lifestyle": "Lifestyle details from documents"
+  }
+}
+
+IMPORTANT: 
+- Extract REAL data from the documents, don't make up generic personas
+- Make each agent as different as possible from the others
+- Use actual quotes, behaviors, and patterns found in the research
+- Ensure agents represent the full spectrum of users in the data
+- Base demographics on actual patterns found in the documents
+
+Generate the 5 agents now:`;
+  }
+
+  private buildInsightGenerationPrompt(documents: DocumentContent[]): string {
+    const documentSummary = documents.map(doc => 
+      `File: ${doc.filename}\nType: ${doc.type}\nContent Preview: ${doc.content.substring(0, 500)}...`
+    ).join('\n\n');
+
+    return `Analyze the following research documents and generate actionable insights about user behavior, preferences, and pain points.
+
+Documents:
+${documentSummary}
+
+Please generate insights with the following structure for each:
+
+{
+  "id": "insight-1",
+  "title": "Insight Title",
+  "description": "Detailed description of the insight",
+  "category": "USABILITY|SECURITY|PERFORMANCE|BEHAVIOR|PREFERENCE",
+  "confidence": 0.85,
+  "evidence": [
+    "Specific evidence point 1",
+    "Specific evidence point 2",
+    "Specific evidence point 3"
+  ],
+  "source": "Document filename",
+  "recommendations": [
+    "Actionable recommendation 1",
+    "Actionable recommendation 2"
+  ],
+  "impact": "High|Medium|Low",
+  "priority": "High|Medium|Low"
+}
+
+Focus on insights that can directly inform product decisions and user experience improvements.`;
+  }
+
+  private parseAgentResponse(content: string): any[] {
+    try {
+      console.log('🔍 Parsing agent response from Grok...');
+      console.log('Raw response:', content.substring(0, 500) + '...');
+      
+      // Try multiple JSON extraction methods
+      let agents = [];
+      
+      // Method 1: Look for JSON array
+      const arrayMatch = content.match(/\[[\s\S]*\]/);
+      if (arrayMatch) {
+        try {
+          agents = JSON.parse(arrayMatch[0]);
+          console.log('✅ Successfully parsed JSON array with', agents.length, 'agents');
+          return agents;
+        } catch (e) {
+          console.log('❌ Failed to parse JSON array, trying other methods...');
+        }
+      }
+      
+      // Method 2: Look for individual JSON objects
+      const objectMatches = content.match(/\{[^{}]*"id":\s*"agent-[^"]*"[^{}]*\}/g);
+      if (objectMatches && objectMatches.length > 0) {
+        try {
+          agents = objectMatches.map(match => JSON.parse(match));
+          console.log('✅ Successfully parsed individual JSON objects:', agents.length, 'agents');
+          return agents;
+        } catch (e) {
+          console.log('❌ Failed to parse individual JSON objects, trying other methods...');
+        }
+      }
+      
+      // Method 3: Try to extract and clean JSON manually
+      const cleanedContent = content
+        .replace(/```json\n?/g, '')
+        .replace(/```\n?/g, '')
+        .replace(/^\s*```.*$/gm, '')
+        .trim();
+      
+      // Look for the start and end of JSON array
+      const startIndex = cleanedContent.indexOf('[');
+      const endIndex = cleanedContent.lastIndexOf(']');
+      
+      if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+        const jsonString = cleanedContent.substring(startIndex, endIndex + 1);
+        try {
+          agents = JSON.parse(jsonString);
+          console.log('✅ Successfully parsed cleaned JSON with', agents.length, 'agents');
+          return agents;
+        } catch (e) {
+          console.log('❌ Failed to parse cleaned JSON, using fallback...');
+        }
+      }
+      
+      console.log('⚠️ Could not parse JSON response, using fallback agents');
+      return this.createFallbackAgents([]);
+      
+    } catch (error) {
+      console.error('❌ Error parsing agent response:', error);
+      return this.createFallbackAgents([]);
+    }
+  }
+
+  private parseInsightResponse(content: string): any[] {
+    try {
+      // Try to extract JSON from the response
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+      
+      // Fallback: create insights from text analysis
+      return this.createFallbackInsights([]);
+    } catch (error) {
+      console.error('Error parsing insight response:', error);
+      return this.createFallbackInsights([]);
+    }
+  }
+
+  private extractThemesFromDocuments(documents: DocumentContent[]): any {
+    const themes = {
+      locations: new Set(),
+      occupations: new Set(),
+      ageGroups: new Set(),
+      techLevels: new Set(),
+      painPoints: new Set(),
+      preferences: new Set(),
+      behaviors: new Set()
+    };
+
+    documents.forEach(doc => {
+      const content = doc.content.toLowerCase();
+      
+      // Extract locations
+      if (content.includes('mumbai') || content.includes('delhi') || content.includes('bangalore')) {
+        themes.locations.add('Urban India');
+      }
+      if (content.includes('rural') || content.includes('village') || content.includes('tier-3')) {
+        themes.locations.add('Rural India');
+      }
+      
+      // Extract occupations
+      if (content.includes('engineer') || content.includes('developer') || content.includes('programmer')) {
+        themes.occupations.add('Software Engineer');
+      }
+      if (content.includes('business') || content.includes('owner') || content.includes('entrepreneur')) {
+        themes.occupations.add('Business Owner');
+      }
+      if (content.includes('teacher') || content.includes('professor') || content.includes('education')) {
+        themes.occupations.add('Teacher');
+      }
+      
+      // Extract tech levels
+      if (content.includes('tech-savvy') || content.includes('digital native') || content.includes('high tech')) {
+        themes.techLevels.add('High');
+      }
+      if (content.includes('low tech') || content.includes('tech-averse') || content.includes('traditional')) {
+        themes.techLevels.add('Low');
+      }
+      
+      // Extract common pain points
+      if (content.includes('complex') || content.includes('difficult') || content.includes('confusing')) {
+        themes.painPoints.add('Complex interfaces');
+      }
+      if (content.includes('slow') || content.includes('loading') || content.includes('performance')) {
+        themes.painPoints.add('Slow performance');
+      }
+      if (content.includes('mobile') || content.includes('phone') || content.includes('responsive')) {
+        themes.painPoints.add('Mobile experience issues');
+      }
+    });
+
+    return {
+      locations: Array.from(themes.locations),
+      occupations: Array.from(themes.occupations),
+      ageGroups: Array.from(themes.ageGroups),
+      techLevels: Array.from(themes.techLevels),
+      painPoints: Array.from(themes.painPoints),
+      preferences: Array.from(themes.preferences),
+      behaviors: Array.from(themes.behaviors)
+    };
+  }
+
+  private createFallbackAgents(documents: DocumentContent[]): any[] {
+    // Extract themes from documents to create more realistic fallback agents
+    const themes = this.extractThemesFromDocuments(documents);
+    
+    return [
+      // TECH SAVVINESS: HIGH
+      {
+        id: `agent-${Date.now()}-1`,
+        name: 'Arjun, Tech Pioneer',
+        persona: 'An extreme tech enthusiast who adopts cutting-edge technology immediately and pushes boundaries',
+        demographics: {
+          ageRange: [25, 32],
+          income: '₹15L-₹25L',
+          location: 'Bangalore, India',
+          occupation: 'AI Research Engineer',
+          education: 'PhD Computer Science',
+          familyStatus: 'Single, tech-focused lifestyle'
+        },
+        behaviors: [
+          'First to try every new app and technology',
+          'Builds custom solutions when existing tools don\'t meet needs',
+          'Participates in beta testing programs actively',
+          'Writes code to automate everything possible',
+          'Uses command line interfaces over GUIs when possible',
+          'Constantly optimizes and tweaks digital workflows'
+        ],
+        preferences: [
+          'APIs and developer tools over consumer interfaces',
+          'Open source solutions over proprietary software',
+          'Command line interfaces and keyboard shortcuts',
+          'Highly customizable and configurable tools',
+          'Real-time data and live updates',
+          'Integration with multiple platforms simultaneously'
+        ],
+        painPoints: [
+          'Tools that don\'t have API access',
+          'Limited customization options',
+          'Slow performance or outdated technology',
+          'Poor documentation or lack of technical details',
+          'Vendor lock-in or proprietary formats',
+          'Tools that don\'t support automation'
+        ],
+        goals: [
+          'Build the most efficient digital workflow possible',
+          'Automate 90% of repetitive tasks',
+          'Stay ahead of technology trends',
+          'Create innovative solutions using latest tech',
+          'Optimize every aspect of digital life',
+          'Contribute to open source projects'
+        ],
+        communicationStyle: 'Technical, precise, uses jargon, prefers text-based communication',
+        techSavviness: 'Extremely High',
+        confidence: 0.95,
+        tools: ['GitHub', 'Docker', 'Kubernetes', 'VS Code', 'Terminal', 'Postman', 'Figma'],
+        channels: ['GitHub', 'Discord', 'Reddit', 'Stack Overflow', 'Twitter', 'LinkedIn']
+      },
+      {
+        id: `agent-${Date.now()}-2`,
+        name: 'Priya, Digital Native',
+        persona: 'A young professional who grew up with technology and expects seamless digital experiences',
+        demographics: {
+          ageRange: [22, 28],
+          income: '₹8L-₹15L',
+          location: 'Mumbai, India',
+          occupation: 'Product Manager',
+          education: 'B.Tech + MBA',
+          familyStatus: 'Single, urban lifestyle'
+        },
+        behaviors: [
+          'Expects instant responses and real-time updates',
+          'Multi-tasks across multiple devices simultaneously',
+          'Prefers visual and interactive interfaces',
+          'Uses voice commands and gestures naturally',
+          'Shares everything on social media',
+          'Expects personalized experiences'
+        ],
+        preferences: [
+          'Mobile-first, responsive design',
+          'Social media integration',
+          'Gamification and interactive elements',
+          'Voice and gesture controls',
+          'AI-powered recommendations',
+          'Seamless cross-device synchronization'
+        ],
+        painPoints: [
+          'Slow loading times or lag',
+          'Complex interfaces that require learning',
+          'Lack of social features',
+          'Poor mobile experience',
+          'Generic, non-personalized content',
+          'Outdated design or UI patterns'
+        ],
+        goals: [
+          'Stay connected with friends and colleagues',
+          'Discover new trends and opportunities',
+          'Build personal brand online',
+          'Efficiently manage work and personal life',
+          'Learn and grow through digital platforms',
+          'Make meaningful connections'
+        ],
+        communicationStyle: 'Casual, emoji-heavy, prefers instant messaging and video calls',
+        techSavviness: 'Very High',
+        confidence: 0.90,
+        tools: ['Instagram', 'TikTok', 'Slack', 'Notion', 'Figma', 'Zoom', 'Spotify'],
+        channels: ['Instagram', 'TikTok', 'WhatsApp', 'Discord', 'Twitter', 'LinkedIn']
+      },
+
+      // TECH SAVVINESS: MEDIUM
+      {
+        id: `agent-${Date.now()}-3`,
+        name: 'Rajesh, Practical Adopter',
+        persona: 'A business professional who uses technology when it clearly adds value but prefers proven solutions',
+        demographics: {
+          ageRange: [35, 45],
+          income: '₹12L-₹20L',
+          location: 'Pune, India',
+          occupation: 'Sales Manager',
+          education: 'MBA Marketing',
+          familyStatus: 'Married with 2 children'
+        },
+        behaviors: [
+          'Adopts technology after seeing clear benefits',
+          'Prefers tools recommended by colleagues',
+          'Reads reviews and case studies before adopting',
+          'Uses technology to solve specific business problems',
+          'Attends training sessions and webinars',
+          'Balances work efficiency with personal time'
+        ],
+        preferences: [
+          'Proven, established solutions',
+          'Good customer support and training',
+          'Integration with existing tools',
+          'Clear ROI and business benefits',
+          'User-friendly interfaces',
+          'Reliable and stable performance'
+        ],
+        painPoints: [
+          'Complex tools that require extensive training',
+          'Unreliable or buggy software',
+          'Poor customer support',
+          'High costs without clear benefits',
+          'Tools that don\'t integrate well',
+          'Frequent updates that change workflows'
+        ],
+        goals: [
+          'Improve team productivity and efficiency',
+          'Better customer relationship management',
+          'Streamline sales processes',
+          'Make data-driven decisions',
+          'Stay competitive in the market',
+          'Balance work and family life'
+        ],
+        communicationStyle: 'Professional, clear, prefers email and scheduled calls',
+        techSavviness: 'Medium',
+        confidence: 0.75,
+        tools: ['Salesforce', 'Microsoft Office', 'Zoom', 'LinkedIn', 'WhatsApp Business'],
+        channels: ['Email', 'LinkedIn', 'WhatsApp', 'Phone calls', 'Video meetings']
+      },
+      {
+        id: `agent-${Date.now()}-4`,
+        name: 'Sunita, Cautious Learner',
+        persona: 'A professional who approaches technology carefully and needs reassurance before adopting new tools',
+        demographics: {
+          ageRange: [40, 50],
+          income: '₹10L-₹18L',
+          location: 'Delhi, India',
+          occupation: 'HR Manager',
+          education: 'MBA HR',
+          familyStatus: 'Married with teenage children'
+        },
+        behaviors: [
+          'Takes time to understand new technology',
+          'Prefers step-by-step guidance and tutorials',
+          'Asks many questions before making decisions',
+          'Values security and privacy highly',
+          'Uses technology for specific, well-defined tasks',
+          'Prefers human support over self-service'
+        ],
+        preferences: [
+          'Clear instructions and help documentation',
+          'Security features and privacy controls',
+          'Familiar interface patterns',
+          'Human customer support',
+          'Gradual learning curve',
+          'Proven track record and testimonials'
+        ],
+        painPoints: [
+          'Complex interfaces without guidance',
+          'Security concerns or data privacy issues',
+          'Lack of human support',
+          'Frequent changes or updates',
+          'Tools that are too advanced',
+          'Poor documentation or help resources'
+        ],
+        goals: [
+          'Improve HR processes and efficiency',
+          'Better employee engagement',
+          'Ensure data security and compliance',
+          'Learn new skills gradually',
+          'Support team members effectively',
+          'Stay updated with industry best practices'
+        ],
+        communicationStyle: 'Detailed, cautious, prefers formal communication and documentation',
+        techSavviness: 'Medium-Low',
+        confidence: 0.65,
+        tools: ['Microsoft Office', 'Zoom', 'LinkedIn', 'Basic HR software', 'Email'],
+        channels: ['Email', 'Phone calls', 'LinkedIn', 'In-person meetings', 'WhatsApp']
+      },
+
+      // TECH SAVVINESS: LOW
+      {
+        id: `agent-${Date.now()}-5`,
+        name: 'Vikram, Traditional Professional',
+        persona: 'A senior professional who prefers traditional methods but recognizes the need for basic digital tools',
+        demographics: {
+          ageRange: [50, 60],
+          income: '₹20L-₹35L',
+          location: 'Chennai, India',
+          occupation: 'Senior Manager',
+          education: 'MBA + 25 years experience',
+          familyStatus: 'Married with grown children'
+        },
+        behaviors: [
+          'Prefers face-to-face meetings over digital communication',
+          'Uses basic features of digital tools only',
+          'Relies on assistants for complex digital tasks',
+          'Values personal relationships over digital efficiency',
+          'Uses technology only when absolutely necessary',
+          'Prefers printed documents over digital ones'
+        ],
+        preferences: [
+          'Simple, basic interfaces',
+          'Personal assistance and training',
+          'Traditional communication methods',
+          'Proven, established solutions',
+          'Minimal learning requirements',
+          'Human interaction and support'
+        ],
+        painPoints: [
+          'Complex digital interfaces',
+          'Lack of personal support',
+          'Technology that changes frequently',
+          'Digital-only processes',
+          'Poor training or support',
+          'Tools that require technical knowledge'
+        ],
+        goals: [
+          'Maintain professional relationships',
+          'Ensure team productivity',
+          'Make informed business decisions',
+          'Stay relevant in changing times',
+          'Support team members effectively',
+          'Balance tradition with modern needs'
+        ],
+        communicationStyle: 'Formal, traditional, prefers phone calls and in-person meetings',
+        techSavviness: 'Low',
+        confidence: 0.50,
+        tools: ['Basic email', 'Phone', 'Microsoft Office (basic)', 'LinkedIn (basic)'],
+        channels: ['Phone calls', 'Email', 'In-person meetings', 'WhatsApp (basic)']
+      },
+
+      // INCOME: HIGH
+      {
+        id: `agent-${Date.now()}-6`,
+        name: 'Ananya, High-Net-Worth Individual',
+        persona: 'A wealthy individual who expects premium services and personalized attention',
+        demographics: {
+          ageRange: [35, 45],
+          income: '₹50L+',
+          location: 'Mumbai, India',
+          occupation: 'Entrepreneur/Investor',
+          education: 'MBA from top B-school',
+          familyStatus: 'Married with children, affluent lifestyle'
+        },
+        behaviors: [
+          'Expects white-glove service and personal attention',
+          'Willing to pay premium for quality and convenience',
+          'Values exclusivity and personalized experiences',
+          'Makes decisions based on recommendations from trusted advisors',
+          'Prefers direct access to senior executives',
+          'Expects immediate response and resolution'
+        ],
+        preferences: [
+          'Premium, exclusive features',
+          'Personal account management',
+          'Custom solutions and configurations',
+          'Priority support and service',
+          'High-quality, polished interfaces',
+          'Integration with other premium services'
+        ],
+        painPoints: [
+          'Generic, mass-market solutions',
+          'Poor customer service or support',
+          'Limited customization options',
+          'Slow response times',
+          'Lack of personal attention',
+          'Security or privacy concerns'
+        ],
+        goals: [
+          'Maximize investment returns',
+          'Protect and grow wealth',
+          'Access exclusive opportunities',
+          'Maintain high lifestyle standards',
+          'Build and preserve legacy',
+          'Ensure family financial security'
+        ],
+        communicationStyle: 'Direct, assertive, expects immediate attention and results',
+        techSavviness: 'High',
+        confidence: 0.90,
+        tools: ['Premium banking apps', 'Investment platforms', 'Luxury brand apps', 'Private banking tools'],
+        channels: ['Direct phone lines', 'Private messaging', 'Personal meetings', 'Exclusive events']
+      },
+
+      // INCOME: MEDIUM
+      {
+        id: `agent-${Date.now()}-7`,
+        name: 'Suresh, Middle-Class Professional',
+        persona: 'A working professional who balances quality with affordability and seeks value for money',
+        demographics: {
+          ageRange: [30, 40],
+          income: '₹8L-₹15L',
+          location: 'Hyderabad, India',
+          occupation: 'Software Engineer',
+          education: 'B.Tech',
+          familyStatus: 'Married with young children'
+        },
+        behaviors: [
+          'Compares prices and features before purchasing',
+          'Looks for discounts and offers',
+          'Reads reviews and recommendations',
+          'Prefers value-for-money solutions',
+          'Plans purchases carefully',
+          'Seeks free trials and demos'
+        ],
+        preferences: [
+          'Good value for money',
+          'Reliable performance',
+          'Essential features without unnecessary extras',
+          'Good customer support',
+          'Regular updates and improvements',
+          'Family-friendly features'
+        ],
+        painPoints: [
+          'Expensive solutions with limited value',
+          'Hidden costs or fees',
+          'Poor customer support',
+          'Unreliable or buggy software',
+          'Lack of essential features',
+          'Complex pricing structures'
+        ],
+        goals: [
+          'Provide for family needs',
+          'Save for children\'s education',
+          'Plan for retirement',
+          'Improve career prospects',
+          'Maintain work-life balance',
+          'Build emergency fund'
+        ],
+        communicationStyle: 'Practical, value-focused, prefers clear communication about costs and benefits',
+        techSavviness: 'Medium-High',
+        confidence: 0.80,
+        tools: ['Google Workspace', 'Zoom', 'LinkedIn', 'Banking apps', 'Investment apps'],
+        channels: ['Email', 'WhatsApp', 'LinkedIn', 'Phone calls', 'Video calls']
+      },
+
+      // INCOME: LOW
+      {
+        id: `agent-${Date.now()}-8`,
+        name: 'Ravi, Budget-Conscious User',
+        persona: 'A price-sensitive individual who seeks free or low-cost solutions and maximizes value',
+        demographics: {
+          ageRange: [25, 35],
+          income: '₹3L-₹6L',
+          location: 'Kolkata, India',
+          occupation: 'Small Business Owner',
+          education: 'Graduate',
+          familyStatus: 'Married, starting family'
+        },
+        behaviors: [
+          'Always looks for free alternatives first',
+          'Compares multiple options extensively',
+          'Uses free trials and freemium models',
+          'Seeks community support and forums',
+          'Prefers open source solutions',
+          'Makes do with basic features'
+        ],
+        preferences: [
+          'Free or very low-cost solutions',
+          'Basic but functional features',
+          'Community support and documentation',
+          'Simple, straightforward interfaces',
+          'No hidden costs or fees',
+          'Good free alternatives to paid tools'
+        ],
+        painPoints: [
+          'Expensive subscription fees',
+          'Limited free features',
+          'Hidden costs or charges',
+          'Complex pricing models',
+          'Poor free alternatives',
+          'Lack of community support'
+        ],
+        goals: [
+          'Start and grow business with minimal costs',
+          'Learn new skills affordably',
+          'Connect with customers and suppliers',
+          'Manage finances efficiently',
+          'Build professional network',
+          'Save money for future needs'
+        ],
+        communicationStyle: 'Practical, cost-conscious, prefers community forums and free resources',
+        techSavviness: 'Medium',
+        confidence: 0.70,
+        tools: ['Google Workspace (free)', 'WhatsApp Business', 'Free accounting software', 'Social media'],
+        channels: ['WhatsApp', 'Facebook', 'Email', 'Phone calls', 'Community forums']
+      },
+
+      // AGE: YOUNG (18-25)
+      {
+        id: `agent-${Date.now()}-9`,
+        name: 'Kavya, Gen Z Digital Native',
+        persona: 'A young individual who has never known a world without smartphones and social media',
+        demographics: {
+          ageRange: [18, 25],
+          income: '₹2L-₹5L',
+          location: 'Bangalore, India',
+          occupation: 'Student/Entry-level Professional',
+          education: 'Graduate/Post-graduate',
+          familyStatus: 'Single, living with parents'
+        },
+        behaviors: [
+          'Uses multiple apps simultaneously',
+          'Prefers visual and video content',
+          'Expects instant gratification and responses',
+          'Shares everything on social media',
+          'Uses slang and internet language',
+          'Adapts quickly to new platforms'
+        ],
+        preferences: [
+          'Mobile-first, app-based solutions',
+          'Social media integration',
+          'Visual and interactive content',
+          'Gamification and rewards',
+          'Instant messaging and quick responses',
+          'Trendy and modern design'
+        ],
+        painPoints: [
+          'Slow or outdated interfaces',
+          'Lack of social features',
+          'Complex registration processes',
+          'Poor mobile experience',
+          'Outdated design or branding',
+          'Limited customization options'
+        ],
+        goals: [
+          'Build social connections and network',
+          'Learn and develop new skills',
+          'Find job opportunities',
+          'Express creativity and personality',
+          'Stay updated with trends',
+          'Have fun while being productive'
+        ],
+        communicationStyle: 'Casual, trendy, uses emojis and internet slang, prefers instant messaging',
+        techSavviness: 'Very High',
+        confidence: 0.95,
+        tools: ['Instagram', 'TikTok', 'Snapchat', 'Discord', 'Spotify', 'Uber', 'Zomato'],
+        channels: ['Instagram', 'TikTok', 'WhatsApp', 'Discord', 'Snapchat', 'Twitter']
+      },
+
+      // AGE: MIDDLE (35-50)
+      {
+        id: `agent-${Date.now()}-10`,
+        name: 'Deepak, Mid-Career Professional',
+        persona: 'A mid-career professional balancing family responsibilities with career growth',
+        demographics: {
+          ageRange: [35, 50],
+          income: '₹12L-₹25L',
+          location: 'Pune, India',
+          occupation: 'Senior Manager',
+          education: 'MBA',
+          familyStatus: 'Married with school-age children'
+        },
+        behaviors: [
+          'Balances work efficiency with family time',
+          'Uses technology to stay organized',
+          'Prefers reliable, proven solutions',
+          'Values work-life balance',
+          'Makes decisions based on family needs',
+          'Seeks tools that save time'
+        ],
+        preferences: [
+          'Reliable and stable solutions',
+          'Good work-life balance features',
+          'Family-friendly interfaces',
+          'Time-saving automation',
+          'Professional and polished design',
+          'Good customer support'
+        ],
+        painPoints: [
+          'Unreliable or buggy software',
+          'Poor work-life balance',
+          'Complex interfaces that waste time',
+          'Lack of family-friendly features',
+          'Poor customer support',
+          'Tools that don\'t integrate well'
+        ],
+        goals: [
+          'Advance career while maintaining family time',
+          'Improve productivity and efficiency',
+          'Provide for family needs',
+          'Plan for children\'s future',
+          'Maintain health and relationships',
+          'Build long-term wealth'
+        ],
+        communicationStyle: 'Professional, balanced, prefers clear communication and scheduled meetings',
+        techSavviness: 'Medium-High',
+        confidence: 0.80,
+        tools: ['Microsoft Office', 'Zoom', 'LinkedIn', 'Banking apps', 'Health apps'],
+        channels: ['Email', 'LinkedIn', 'WhatsApp', 'Phone calls', 'Video meetings']
+      },
+
+      // AGE: SENIOR (55+)
+      {
+        id: `agent-${Date.now()}-11`,
+        name: 'Shanti, Senior Professional',
+        persona: 'A senior professional who approaches technology with caution but recognizes its benefits',
+        demographics: {
+          ageRange: [55, 65],
+          income: '₹15L-₹30L',
+          location: 'Delhi, India',
+          occupation: 'Senior Consultant',
+          education: 'MBA + 30 years experience',
+          familyStatus: 'Married with grown children'
+        },
+        behaviors: [
+          'Takes time to understand new technology',
+          'Prefers human guidance and support',
+          'Values security and privacy highly',
+          'Uses technology for specific purposes only',
+          'Prefers traditional communication methods',
+          'Seeks reassurance before adopting new tools'
+        ],
+        preferences: [
+          'Simple, clear interfaces',
+          'Comprehensive help and support',
+          'Security and privacy features',
+          'Familiar design patterns',
+          'Human customer support',
+          'Proven, established solutions'
+        ],
+        painPoints: [
+          'Complex interfaces without guidance',
+          'Security and privacy concerns',
+          'Lack of human support',
+          'Frequent changes or updates',
+          'Technology that\'s too advanced',
+          'Poor documentation or help'
+        ],
+        goals: [
+          'Stay relevant in changing times',
+          'Support younger team members',
+          'Ensure data security and privacy',
+          'Learn new skills gradually',
+          'Maintain professional relationships',
+          'Plan for retirement and legacy'
+        ],
+        communicationStyle: 'Formal, detailed, prefers written communication and documentation',
+        techSavviness: 'Low-Medium',
+        confidence: 0.60,
+        tools: ['Basic email', 'Microsoft Office', 'LinkedIn', 'Banking apps', 'Video calling'],
+        channels: ['Email', 'Phone calls', 'LinkedIn', 'In-person meetings', 'WhatsApp']
+      }
+    ];
+  }
+
+  private createFallbackInsights(documents: DocumentContent[]): any[] {
+    return [
+      {
+        id: "insight-1",
+        title: "Mobile-First User Behavior",
+        description: "Users strongly prefer mobile interfaces for most interactions, with 78% of usage occurring on mobile devices.",
+        category: "BEHAVIOR",
+        confidence: 0.85,
+        evidence: [
+          "Mobile usage: 78%",
+          "Desktop usage: 22%",
+          "User feedback: 'Much easier on phone'"
+        ],
+        source: "User Research Data",
+        recommendations: [
+          "Optimize all features for mobile",
+          "Implement mobile-first design patterns",
+          "Test on various mobile devices"
+        ],
+        impact: "High",
+        priority: "High"
+      },
+      {
+        id: "insight-2",
+        title: "Security as Primary Concern",
+        description: "Users prioritize security features over convenience, with 89% mentioning security as their top concern.",
+        category: "SECURITY",
+        confidence: 0.92,
+        evidence: [
+          "Security mentions: 89%",
+          "Convenience mentions: 45%",
+          "User feedback: 'Safety first'"
+        ],
+        source: "Security Survey Data",
+        recommendations: [
+          "Implement robust security measures",
+          "Communicate security features clearly",
+          "Provide security education"
+        ],
+        impact: "High",
+        priority: "High"
+      }
+    ];
   }
 }
 

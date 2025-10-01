@@ -8,6 +8,7 @@ import PRDViewer from './PRDViewer';
 import PRDViewerNew from './PRDViewerNew';
 import PRDViewerNotion from './PRDViewerNotion';
 import PRDStreamingViewer from './PRDStreamingViewer';
+import { useApp } from '../../context/AppContext';
 
 interface ProductThinkingProps {
   project: Project;
@@ -15,6 +16,7 @@ interface ProductThinkingProps {
 }
 
 export default function ProductThinking({ project, onProjectUpdate }: ProductThinkingProps) {
+  const { state } = useApp();
   const [isEditing, setIsEditing] = useState(false);
   const [currentStep, setCurrentStep] = useState<'setup' | 'generate' | 'preview' | 'finalize'>('setup');
   const [generatedPRD, setGeneratedPRD] = useState<any>(null);
@@ -227,8 +229,8 @@ export default function ProductThinking({ project, onProjectUpdate }: ProductThi
     }
   };
 
-  // Show PRD Viewer if PRD is completed and we're not editing
-  if (prd && prd.status === 'COMPLETED' && !isEditing) {
+  // Show PRD Viewer if PRD has content and we're not editing
+  if (prd && (prd.content || prd.status === 'COMPLETED') && !isEditing) {
     return (
       <PRDViewerNotion
         project={project}
@@ -265,6 +267,7 @@ export default function ProductThinking({ project, onProjectUpdate }: ProductThi
         {useStreamingViewer ? (
           <PRDStreamingViewer
             project={project}
+            userRole={state.user?.role}
             onEdit={() => setIsEditing(true)}
             onFinalize={(finalPRD) => {
               setGeneratedPRD(finalPRD);

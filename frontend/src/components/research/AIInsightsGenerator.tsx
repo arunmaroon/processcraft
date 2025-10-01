@@ -62,7 +62,7 @@ export default function AIInsightsGenerator({
   }, [insights]);
 
   useEffect(() => {
-    let filtered = insights;
+    let filtered = insights || [];
 
     if (filters.category !== 'all') {
       filtered = filtered.filter(insight => insight.category === filters.category);

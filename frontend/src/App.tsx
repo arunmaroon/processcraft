@@ -13,7 +13,11 @@ import AdminLogin from './components/admin/AdminLogin';
 import ResearchCentralDashboard from './components/admin/ResearchCentralDashboard';
 import AIAgentHub from './components/admin/AIAgentHub';
 import UXDesignerModule from './components/ux/UXDesignerModule';
+import AgentSystemIntegration from './components/agents/AgentSystemIntegration';
+import AdvancedResearchDashboard from './components/advanced/AdvancedResearchDashboard';
+import MultimodalAnalyzer from './components/advanced/MultimodalAnalyzer';
 import { useApp } from './context/AppContext';
+import { SafeMapErrorBoundary } from './components/SafeMapErrorBoundary';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -65,6 +69,7 @@ class ErrorBoundary extends React.Component<
 function AppContent() {
   const { state, dispatch } = useApp();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showAgentSystem, setShowAgentSystem] = useState(false);
 
   // Check for admin token - MUST be called before any conditional returns
   useEffect(() => {
@@ -73,6 +78,9 @@ function AppContent() {
       setIsAdmin(true);
     }
   }, []);
+
+  // Debug logging
+  console.log('AppContent render - loading:', state.loading, 'isAdmin:', isAdmin, 'user:', state.user);
 
   if (state.loading) {
     return (
@@ -104,6 +112,9 @@ function AppContent() {
             <Route path="/ux-designer" element={<UXDesignerModule project={null} />} />
             <Route path="/admin/research-central" element={<ResearchCentralDashboard onLogout={handleAdminLogout} />} />
             <Route path="/admin/ai-agent-hub" element={<AIAgentHub />} />
+            <Route path="/admin/agents" element={<AgentSystemIntegration onClose={() => setShowAgentSystem(false)} />} />
+            <Route path="/admin/advanced-dashboard" element={<AdvancedResearchDashboard />} />
+            <Route path="/admin/multimodal-analyzer" element={<MultimodalAnalyzer />} />
             <Route path="/admin/login" element={<AdminLogin onLogin={setIsAdmin} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -118,6 +129,8 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/admin/login" element={<AdminLogin onLogin={setIsAdmin} />} />
+          <Route path="/admin/advanced-dashboard" element={<AdvancedResearchDashboard />} />
+          <Route path="/admin/multimodal-analyzer" element={<MultimodalAnalyzer />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
@@ -131,6 +144,9 @@ function AppContent() {
         <Routes>
           <Route path="/admin/research-central" element={<ResearchCentralDashboard onLogout={handleAdminLogout} />} />
           <Route path="/admin/ai-agent-hub" element={<AIAgentHub />} />
+          <Route path="/admin/agents" element={<AgentSystemIntegration onClose={() => setShowAgentSystem(false)} />} />
+          <Route path="/admin/advanced-dashboard" element={<AdvancedResearchDashboard />} />
+          <Route path="/admin/multimodal-analyzer" element={<MultimodalAnalyzer />} />
           <Route path="/admin/login" element={<AdminLogin onLogin={setIsAdmin} />} />
           <Route path="*" element={<Navigate to="/admin/research-central" replace />} />
         </Routes>
@@ -138,6 +154,9 @@ function AppContent() {
     );
   }
 
+  // Fallback for debugging
+  console.log('Rendering main app content');
+  
   return (
     <Router>
       <Layout>
@@ -149,6 +168,8 @@ function AppContent() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/project/:id" element={<ProjectDetail />} />
           <Route path="/admin/login" element={<AdminLogin onLogin={setIsAdmin} />} />
+          <Route path="/admin/advanced-dashboard" element={<AdvancedResearchDashboard />} />
+          <Route path="/admin/multimodal-analyzer" element={<MultimodalAnalyzer />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
@@ -157,13 +178,28 @@ function AppContent() {
 }
 
 function App() {
-  return (
-    <ErrorBoundary>
-      <AppProvider>
-        <AppContent />
-      </AppProvider>
-    </ErrorBoundary>
-  );
+  console.log('App component rendering');
+  
+  try {
+    return (
+      <ErrorBoundary>
+        <AppProvider>
+          <SafeMapErrorBoundary>
+            <AppContent />
+          </SafeMapErrorBoundary>
+        </AppProvider>
+      </ErrorBoundary>
+    );
+  } catch (error) {
+    console.error('App component error:', error);
+    return (
+      <div style={{ padding: '20px', backgroundColor: 'lightcoral', minHeight: '100vh' }}>
+        <h1>App Error</h1>
+        <p>There was an error loading the app: {error?.toString()}</p>
+        <button onClick={() => window.location.reload()}>Reload Page</button>
+      </div>
+    );
+  }
 }
 
 export default App;

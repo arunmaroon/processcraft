@@ -36,7 +36,7 @@ export default function ResearchPlanner({ project, onPlanCreated }: ResearchPlan
           ageRange: [25, 35] as [number, number],
           gender: ['All'],
           location: ['Global'],
-          income: ['$50K-$100K'],
+          income: ['5L-10L'],
           education: ['Bachelor\'s Degree']
         },
         size: 1000
@@ -62,7 +62,7 @@ export default function ResearchPlanner({ project, onPlanCreated }: ResearchPlan
       ageRange: [25, 35] as [number, number],
       gender: ['All'],
       location: ['Global'],
-      income: ['$50K-$100K'],
+      income: ['5L-10L'],
       education: ['Bachelor\'s Degree']
     } as Demographics
   });
@@ -76,7 +76,7 @@ export default function ResearchPlanner({ project, onPlanCreated }: ResearchPlan
         ageRange: [25, 35],
         gender: ['All'],
         location: ['Global'],
-        income: ['$50K-$100K'],
+        income: ['5L-10L'],
         education: ['Bachelor\'s Degree']
       },
       size: 500
@@ -621,10 +621,10 @@ export default function ResearchPlanner({ project, onPlanCreated }: ResearchPlan
                         })}
                         className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
                       >
-                        <option value="$0-$25K">$0-$25K</option>
-                        <option value="$25K-$50K">$25K-$50K</option>
-                        <option value="$50K-$100K">$50K-$100K</option>
-                        <option value="$100K+">$100K+</option>
+                        <option value="0-2.5L">0-2.5L</option>
+                        <option value="2.5L-5L">2.5L-5L</option>
+                        <option value="5L-10L">5L-10L</option>
+                        <option value="10L+">10L+</option>
                       </select>
                     </div>
                   </div>
