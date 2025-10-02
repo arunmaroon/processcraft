@@ -18,7 +18,9 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   assignedUsers: Record<string, string[]>;
-  prd: any;
+  prds?: any[]; // Changed from single prd to array of PRDs
+  activePRDId?: string; // ID of the currently active PRD
+  prd?: any; // Keep for backward compatibility
   approvals: any[];
   version: number;
 }

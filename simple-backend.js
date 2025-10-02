@@ -17,6 +17,55 @@ const redisService = new RedisService();
 const vectorSearchService = new VectorSearchService();
 const analyticsService = new AnalyticsService();
 
+// Simple in-memory project storage
+let projects = [
+  {
+    id: '1',
+    name: 'DigiGold Mobile App',
+    description: 'A mobile banking app for digital gold investment',
+    status: 'IN_PROGRESS',
+    currentStage: 'RESEARCH',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    assignedUsers: {
+      PM: ['1'],
+      DESIGNER: ['2'],
+      DESIGN_HEAD: ['3']
+    },
+    prd: {
+      id: 'prd-1',
+      objectives: [
+        'Enable users to buy and sell digital gold',
+        'Provide real-time gold price tracking',
+        'Offer secure wallet functionality'
+      ],
+      targetUsers: [
+        'Tech-savvy millennials (25-35)',
+        'Investment enthusiasts',
+        'Mobile-first users'
+      ],
+      successMetrics: [
+        'User acquisition rate > 1000/month',
+        'Transaction volume > $100K/month',
+        'User retention > 80% after 3 months'
+      ],
+      businessContext: 'Digital gold is becoming increasingly popular as an investment option.',
+      constraints: [
+        'Must comply with financial regulations',
+        'Maximum 2-second load time',
+        'Support for iOS and Android'
+      ],
+      status: 'APPROVED',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    prds: [], // New multi-PRD support
+    activePRDId: null,
+    approvals: [],
+    version: 1
+  }
+];
+
 // Initialize Redis connection
 redisService.connect().then(() => {
   console.log('✅ Redis service initialized');
@@ -61,53 +110,107 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Projects endpoint
+// Project Management Routes
+// GET /api/projects - Get all projects
 app.get('/api/projects', (req, res) => {
-  res.json([
-    {
-      id: '1',
-      name: 'DigiGold Mobile App',
-      description: 'A mobile banking app for digital gold investment',
-      status: 'IN_PROGRESS',
-      currentStage: 'RESEARCH',
+  try {
+    console.log(`📋 Returning ${projects.length} projects`);
+    res.json(projects);
+  } catch (error) {
+    console.error('❌ Error fetching projects:', error);
+    res.status(500).json({ error: 'Failed to fetch projects' });
+  }
+});
+
+// GET /api/projects/:id - Get project by ID
+app.get('/api/projects/:id', (req, res) => {
+  try {
+    const project = projects.find(p => p.id === req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    console.log(`📋 Returning project: ${project.name} (ID: ${project.id})`);
+    res.json(project);
+  } catch (error) {
+    console.error('❌ Error fetching project:', error);
+    res.status(500).json({ error: 'Failed to fetch project' });
+  }
+});
+
+// POST /api/projects - Create new project
+app.post('/api/projects', (req, res) => {
+  try {
+    const projectData = req.body;
+    console.log('📝 Creating new project:', projectData.name);
+    
+    const newProject = {
+      id: Date.now().toString(),
+      ...projectData,
+      prds: projectData.prds || [],
+      activePRDId: projectData.activePRDId || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      assignedUsers: {
-        PM: ['1'],
-        DESIGNER: ['2'],
-        DESIGN_HEAD: ['3']
-      },
-      prd: {
-        id: 'prd-1',
-        objectives: [
-          'Enable users to buy and sell digital gold',
-          'Provide real-time gold price tracking',
-          'Offer secure wallet functionality'
-        ],
-        targetUsers: [
-          'Tech-savvy millennials (25-35)',
-          'Investment enthusiasts',
-          'Mobile-first users'
-        ],
-        successMetrics: [
-          'User acquisition rate > 1000/month',
-          'Transaction volume > $100K/month',
-          'User retention > 80% after 3 months'
-        ],
-        businessContext: 'Digital gold is becoming increasingly popular as an investment option.',
-        constraints: [
-          'Must comply with financial regulations',
-          'Maximum 2-second load time',
-          'Support for iOS and Android'
-        ],
-        status: 'APPROVED',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      approvals: [],
       version: 1
+    };
+    
+    projects.push(newProject);
+    console.log(`✅ Project created successfully: ${newProject.name} (ID: ${newProject.id})`);
+    
+    res.status(201).json(newProject);
+  } catch (error) {
+    console.error('❌ Error creating project:', error);
+    res.status(500).json({ error: 'Failed to create project' });
+  }
+});
+
+// PUT /api/projects/:id - Update project
+app.put('/api/projects/:id', (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const projectData = req.body;
+    
+    console.log(`📝 Updating project: ${projectId}`);
+    
+    const projectIndex = projects.findIndex(p => p.id === projectId);
+    if (projectIndex === -1) {
+      return res.status(404).json({ error: 'Project not found' });
     }
-  ]);
+    
+    const updatedProject = {
+      ...projects[projectIndex],
+      ...projectData,
+      id: projectId, // Ensure ID doesn't change
+      updatedAt: new Date().toISOString(),
+      version: projects[projectIndex].version + 1
+    };
+    
+    projects[projectIndex] = updatedProject;
+    console.log(`✅ Project updated successfully: ${updatedProject.name} (ID: ${updatedProject.id})`);
+    res.json(updatedProject);
+  } catch (error) {
+    console.error('❌ Error updating project:', error);
+    res.status(500).json({ error: 'Failed to update project' });
+  }
+});
+
+// DELETE /api/projects/:id - Delete project
+app.delete('/api/projects/:id', (req, res) => {
+  try {
+    const projectId = req.params.id;
+    console.log(`🗑️ Deleting project: ${projectId}`);
+    
+    const projectIndex = projects.findIndex(p => p.id === projectId);
+    if (projectIndex === -1) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    projects.splice(projectIndex, 1);
+    console.log(`✅ Project deleted successfully: ${projectId}`);
+    res.json({ message: 'Project deleted successfully' });
+  } catch (error) {
+    console.error('❌ Error deleting project:', error);
+    res.status(500).json({ error: 'Failed to delete project' });
+  }
 });
 
 // Notifications endpoint

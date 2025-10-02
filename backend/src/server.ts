@@ -25,6 +25,7 @@ import uxDesignerRoutes from './routes/ux-designer';
 import agentRoutes from './routes/agents';
 import authRoutes from './routes/auth';
 import advancedResearchRoutes from './routes/advanced-research';
+import multiPRDRoutes from './routes/multi-prd';
 console.log('🔑 Environment check:');
 console.log('CLAUDE_API_KEY:', process.env.CLAUDE_API_KEY ? 'LOADED' : 'NOT LOADED');
 console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? 'LOADED' : 'NOT LOADED');
@@ -77,6 +78,7 @@ app.use('/api/research', researchReportRoutes);
 app.use('/api/ai-agent-hub', aiAgentHubRoutes);
 app.use('/api/ux-designer', uxDesignerRoutes);
 app.use('/api/advanced-research', advancedResearchRoutes);
+app.use('/api/multi-prd', multiPRDRoutes);
 // Mock agent generation endpoint (temporary)
 app.post('/api/agents/generate', async (req, res) => {
   try {

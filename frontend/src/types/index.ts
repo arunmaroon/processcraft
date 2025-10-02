@@ -27,7 +27,8 @@ export interface Project {
   assignedUsers: {
     [key in UserRole]?: string[];
   };
-  prd?: PRD;
+  prds?: PRD[]; // Changed from single prd to array of PRDs
+  activePRDId?: string; // ID of the currently active PRD
   research?: ResearchData;
   design?: DesignData;
   uiVariants?: UIVariant[];
@@ -61,15 +62,22 @@ export type ResearchStep =
 
 export interface PRD {
   id: string;
+  title: string; // Human-readable title for the PRD
+  description?: string; // Brief description of what this PRD covers
   objectives: string[];
   targetUsers: string[];
   successMetrics: string[];
   businessContext: string;
   constraints: string[];
-  status: 'DRAFT' | 'COMPLETED';
+  status: 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED' | 'ARCHIVED';
   feedback?: string;
   createdAt: string;
   updatedAt: string;
+  createdBy: string; // User ID who created this PRD
+  lastModifiedBy: string; // User ID who last modified this PRD
+  version: string; // Version number (e.g., "1.0", "2.1")
+  isActive: boolean; // Whether this is the active PRD for the project
+  tags: string[]; // Tags for categorization (e.g., ["MVP", "Mobile", "Web"])
   generatedContent?: any;
   sections?: {
     strategy?: string;
@@ -79,7 +87,19 @@ export interface PRD {
     execution?: string;
     metrics?: string;
   };
-  version?: string;
+  parentPRDId?: string; // If this is a version of another PRD
+  changeLog?: PRDChange[]; // Track changes between versions
+}
+
+export interface PRDChange {
+  id: string;
+  timestamp: string;
+  changedBy: string;
+  changeType: 'CREATED' | 'UPDATED' | 'STATUS_CHANGED' | 'VERSION_CREATED';
+  description: string;
+  field?: string;
+  oldValue?: any;
+  newValue?: any;
 }
 
 export interface ResearchData {
