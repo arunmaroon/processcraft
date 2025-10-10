@@ -7,15 +7,13 @@ import ProjectDetail from './components/layout/ProjectDetail';
 import ProjectsPage from './components/layout/ProjectsPage';
 import AnalyticsPage from './components/layout/AnalyticsPage';
 import TeamPage from './components/layout/TeamPage';
-import SettingsPage from './components/layout/SettingsPage';
 import Login from './components/shared/Login';
 import AdminLogin from './components/admin/AdminLogin';
 import ResearchCentralDashboard from './components/admin/ResearchCentralDashboard';
 import AIAgentHub from './components/admin/AIAgentHub';
 import UXDesignerModule from './components/ux/UXDesignerModule';
-import AgentSystemIntegration from './components/agents/AgentSystemIntegration';
-import AdvancedResearchDashboard from './components/advanced/AdvancedResearchDashboard';
-import MultimodalAnalyzer from './components/advanced/MultimodalAnalyzer';
+import AIAgentChatTab from './components/ai-agent-chat/AIAgentChatTab';
+import Settings from './components/admin/Settings';
 import { useApp } from './context/AppContext';
 import { SafeMapErrorBoundary } from './components/SafeMapErrorBoundary';
 
@@ -105,16 +103,14 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<ProjectManager />} />
             <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/ai-chat" element={<AIAgentChatTab />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/team" element={<TeamPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/project/:id" element={<ProjectDetail />} />
             <Route path="/ux-designer" element={<UXDesignerModule project={null} />} />
             <Route path="/admin/research-central" element={<ResearchCentralDashboard onLogout={handleAdminLogout} />} />
             <Route path="/admin/ai-agent-hub" element={<AIAgentHub />} />
-            <Route path="/admin/agents" element={<AgentSystemIntegration onClose={() => setShowAgentSystem(false)} />} />
-            <Route path="/admin/advanced-dashboard" element={<AdvancedResearchDashboard />} />
-            <Route path="/admin/multimodal-analyzer" element={<MultimodalAnalyzer />} />
             <Route path="/admin/login" element={<AdminLogin onLogin={setIsAdmin} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -129,8 +125,6 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/admin/login" element={<AdminLogin onLogin={setIsAdmin} />} />
-          <Route path="/admin/advanced-dashboard" element={<AdvancedResearchDashboard />} />
-          <Route path="/admin/multimodal-analyzer" element={<MultimodalAnalyzer />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
@@ -144,9 +138,6 @@ function AppContent() {
         <Routes>
           <Route path="/admin/research-central" element={<ResearchCentralDashboard onLogout={handleAdminLogout} />} />
           <Route path="/admin/ai-agent-hub" element={<AIAgentHub />} />
-          <Route path="/admin/agents" element={<AgentSystemIntegration onClose={() => setShowAgentSystem(false)} />} />
-          <Route path="/admin/advanced-dashboard" element={<AdvancedResearchDashboard />} />
-          <Route path="/admin/multimodal-analyzer" element={<MultimodalAnalyzer />} />
           <Route path="/admin/login" element={<AdminLogin onLogin={setIsAdmin} />} />
           <Route path="*" element={<Navigate to="/admin/research-central" replace />} />
         </Routes>
@@ -163,13 +154,12 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<ProjectManager />} />
           <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/ai-chat" element={<AIAgentChatTab />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/team" element={<TeamPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/project/:id" element={<ProjectDetail />} />
           <Route path="/admin/login" element={<AdminLogin onLogin={setIsAdmin} />} />
-          <Route path="/admin/advanced-dashboard" element={<AdvancedResearchDashboard />} />
-          <Route path="/admin/multimodal-analyzer" element={<MultimodalAnalyzer />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>

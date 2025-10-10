@@ -202,7 +202,7 @@ export default function ProductThinking({ project, onProjectUpdate }: ProductThi
         <div className="flex items-center space-x-3">
           <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(prd.status)}`}>
             {getStatusIcon(prd.status)}
-            <span>{prd.status.replace('_', ' ').toLowerCase()}</span>
+            <span>{prd.status?.replace('_', ' ').toLowerCase() || 'unknown'}</span>
           </div>
           <PMOnly>
             <div className="flex space-x-2">

@@ -160,7 +160,7 @@ export default function PRDList({
                     )}
                     <span className={`inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-full text-xs ${getStatusColor(prd.status)}`}>
                       {getStatusIcon(prd.status)}
-                      <span>{prd.status.replace('_', ' ')}</span>
+                      <span>{prd.status?.replace('_', ' ') || 'Unknown'}</span>
                     </span>
                   </div>
                   <p className="text-xs text-gray-500">v{prd.version} • {new Date(prd.updatedAt).toLocaleDateString()}</p>
@@ -283,7 +283,7 @@ export default function PRDList({
                       )}
                       <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs ${getStatusColor(prd.status)}`}>
                         {getStatusIcon(prd.status)}
-                        <span>{prd.status.replace('_', ' ')}</span>
+                        <span>{prd.status?.replace('_', ' ') || 'Unknown'}</span>
                       </span>
                     </div>
                     <div className="flex items-center space-x-4 text-xs text-gray-500">
@@ -550,4 +550,5 @@ function CreatePRDForm({ project, onClose, onCreate }: CreatePRDFormProps) {
     </div>
   );
 }
+
 

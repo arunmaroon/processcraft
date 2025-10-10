@@ -148,7 +148,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <div className="text-right hidden sm:block">
               <p className="text-sm font-medium text-gray-900">{state.user.name}</p>
               <p className="text-xs text-gray-500 capitalize">
-                {state.user.role.replace('_', ' ').toLowerCase()}
+                {state.user.role?.replace('_', ' ').toLowerCase() || 'user'}
               </p>
             </div>
             <div className="relative">

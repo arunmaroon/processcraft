@@ -100,7 +100,7 @@ export default function ProjectDetail() {
                 project.status === 'PENDING_APPROVAL' ? 'bg-yellow-100 text-yellow-800' :
                 'bg-emerald-100 text-emerald-800'
               }`}>
-                {project.status.replace('_', ' ').toLowerCase()}
+                {project.status?.replace('_', ' ').toLowerCase() || 'unknown'}
               </span>
             </div>
             <p className="text-sm text-gray-500 truncate max-w-md">{project.description}</p>

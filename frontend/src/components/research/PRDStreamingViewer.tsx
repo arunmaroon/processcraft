@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Sparkles, CheckCircle, Clock, AlertCircle, Download, Edit3, ArrowRight } from 'lucide-react';
 import Button from '../shared/Button';
+import { formatPRDMarkdown } from '../../utils/prdFormatter';
 
 interface PRDStreamingViewerProps {
   project: any;
@@ -266,20 +267,20 @@ const PRDStreamingViewer: React.FC<PRDStreamingViewerProps> = ({
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-3">
-          {/* Header text above */}
-          <div className="mb-3">
-            <h1 className="text-xl font-semibold text-gray-900">PRD Generator</h1>
-            <p className="text-gray-500 text-sm">AI-powered PRD generation</p>
-          </div>
-          
-          {/* Icon and buttons row */}
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
+            {/* Left side - Title and description */}
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
                 <FileText className="w-6 h-6 text-white" />
               </div>
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">PRD Generator</h1>
+                <p className="text-gray-500 text-sm">AI-powered product requirements generation</p>
+              </div>
             </div>
+            
+            {/* Right side - Action buttons */}
             <div className="flex items-center space-x-2">
               {isComplete && (
                 <>
@@ -603,10 +604,15 @@ const PRDStreamingViewer: React.FC<PRDStreamingViewerProps> = ({
                 </div>
               </div>
             </div>
-            <div className="p-8">
+            <div className="p-8 md:p-12">
               <div
+                className="prd-content"
+                style={{
+                  fontSize: '16px',
+                  lineHeight: '1.8'
+                }}
                 dangerouslySetInnerHTML={{
-                  __html: formatPRDContent(generatedContent || '')
+                  __html: formatPRDMarkdown(generatedContent || '')
                 }}
               />
             </div>

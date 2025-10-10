@@ -1,0 +1,95 @@
+{
+  "products": [
+    {
+      "id": "1",
+      "name": "DigiGold",
+      "description": "Digital gold investment and trading platform",
+      "category": "FinTech",
+      "status": "active",
+      "createdAt": "2024-01-15",
+      "updatedAt": "2025-10-10",
+      "owner": "Product Team",
+      "tags": [
+        "investment",
+        "gold",
+        "trading"
+      ],
+      "prds": [
+        {
+          "id": "prd-1",
+          "title": "User Onboarding Flow",
+          "description": "Complete user onboarding experience for new investors",
+          "status": "approved",
+          "version": "1.2",
+          "createdAt": "2024-01-15",
+          "updatedAt": "2024-01-18",
+          "author": "UX Team",
+          "tags": [
+            "onboarding",
+            "user-experience"
+          ],
+          "content": "Detailed PRD content for user onboarding..."
+        },
+        {
+          "id": "prd-2",
+          "title": "Trading Interface",
+          "description": "Core trading interface for buying and selling gold",
+          "status": "review",
+          "version": "2.0",
+          "createdAt": "2024-01-16",
+          "updatedAt": "2024-01-19",
+          "author": "Product Team",
+          "tags": [
+            "trading",
+            "interface"
+          ],
+          "content": "Detailed PRD content for trading interface..."
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "name": "FD",
+      "description": "Comprehensive mobile banking application",
+      "category": "Banking",
+      "status": "active",
+      "createdAt": "2024-01-10",
+      "updatedAt": "2025-10-10",
+      "owner": "Banking Team",
+      "tags": [
+        "banking",
+        "mobile",
+        "fintech"
+      ],
+      "prds": [
+        {
+          "id": "prd-3",
+          "title": "Account Management",
+          "description": "User account management and profile features",
+          "status": "draft",
+          "version": "1.0",
+          "createdAt": "2024-01-10",
+          "updatedAt": "2024-01-12",
+          "author": "Product Team",
+          "tags": [
+            "account",
+            "profile"
+          ],
+          "content": "Detailed PRD content for account management..."
+        }
+      ]
+    },
+    {
+      "id": "product-1760074895132",
+      "name": "Personal Loan",
+      "description": "lkjhlk",
+      "category": "Lendining",
+      "status": "active",
+      "createdAt": "2025-10-10",
+      "updatedAt": "2025-10-10",
+      "owner": ";kjh",
+      "tags": [],
+      "prds": []
+    }
+  ]
+}

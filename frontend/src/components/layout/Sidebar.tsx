@@ -4,7 +4,6 @@ import {
   Home, 
   FolderOpen, 
   Users, 
-  Settings, 
   X,
   Plus,
   BarChart3,
@@ -17,7 +16,10 @@ import {
   Type,
   ChevronRight,
   Menu,
-  ChevronLeft
+  ChevronLeft,
+  MessageSquare,
+  Brain,
+  Settings
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -31,6 +33,7 @@ interface SidebarProps {
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'All Projects', href: '/projects', icon: FolderOpen },
+  { name: 'AI Chat', href: '/ai-chat', icon: MessageSquare },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Team', href: '/team', icon: Users },
   { name: 'Settings', href: '/settings', icon: Settings },
@@ -104,9 +107,11 @@ export default function Sidebar({ isOpen, onClose, isCollapsed = false, onToggle
   const { state, getProjectsByRole } = useApp();
   const location = useLocation();
 
+  console.log('Sidebar render - user:', state.user, 'role:', state.user?.role);
+  
   if (!state.user) return null;
 
-  const userProjects = getProjectsByRole(state.user.role);
+  const userProjects = getProjectsByRole(state.user.role) || [];
 
   return (
     <>
@@ -318,7 +323,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed = false, onToggle
                     </p>
                     <div className="flex items-center space-x-2">
                       <span className="text-xs text-gray-500 capitalize">
-                        {state.user.role.replace('_', ' ').toLowerCase()}
+                        {state.user.role?.replace('_', ' ').toLowerCase() || 'user'}
                       </span>
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                         Active

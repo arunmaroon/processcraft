@@ -41,9 +41,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'LOGOUT':
       return { ...state, user: null };
     case 'SET_PROJECTS':
-      return { ...state, projects: action.payload };
+      return { ...state, projects: Array.isArray(action.payload) ? action.payload : [] };
     case 'ADD_PROJECT':
-      return { ...state, projects: [...state.projects, action.payload] };
+      return { ...state, projects: [...(state.projects || []), action.payload] };
     case 'UPDATE_PROJECT':
       return {
         ...state,
@@ -54,7 +54,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'DELETE_PROJECT':
       return {
         ...state,
-        projects: state.projects.filter(p => p.id !== action.payload),
+        projects: (state.projects || []).filter(p => p.id !== action.payload),
       };
     case 'SET_NOTIFICATIONS':
       return { ...state, notifications: action.payload };
@@ -110,7 +110,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // Load user from localStorage
         const savedUser = localStorage.getItem('processcraft_user');
         if (savedUser) {
-          dispatch({ type: 'SET_USER', payload: JSON.parse(savedUser) });
+          const user = JSON.parse(savedUser);
+          console.log('✅ Loaded user from localStorage:', user);
+          dispatch({ type: 'SET_USER', payload: user });
         } else {
           // Create default user for demo
           const defaultUser: User = {
@@ -120,6 +122,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             role: 'PM',
             avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
           };
+          console.log('✅ Creating default user:', defaultUser);
           dispatch({ type: 'SET_USER', payload: defaultUser });
           localStorage.setItem('processcraft_user', JSON.stringify(defaultUser));
         }
@@ -132,11 +135,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           try {
             const projectsResponse = await fetch('/api/projects');
             if (projectsResponse.ok) {
-              const apiProjects = await projectsResponse.json();
-              console.log('✅ Loaded projects from API:', apiProjects.length);
-              projectsToLoad = apiProjects;
+              const apiResponse = await projectsResponse.json();
+              console.log('✅ API Response:', apiResponse);
+              // Handle both array format and {success: true, projects: [...]} format
+              const apiProjects = Array.isArray(apiResponse) ? apiResponse : (apiResponse.projects || []);
+              console.log('✅ Loaded projects from API:', Array.isArray(apiProjects) ? apiProjects.length : 'Not an array');
+              projectsToLoad = Array.isArray(apiProjects) ? apiProjects : [];
               // Update localStorage with API data
-              saveProjectsToStorage(apiProjects);
+              saveProjectsToStorage(projectsToLoad);
             } else {
               throw new Error(`API error: ${projectsResponse.status}`);
             }
@@ -206,8 +212,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           
           // Set the projects (from localStorage, API, or sample data)
           console.log('AppContext: Final projects to load:', projectsToLoad);
-          console.log('AppContext: Final number of projects:', projectsToLoad.length);
-          dispatch({ type: 'SET_PROJECTS', payload: projectsToLoad });
+          console.log('AppContext: Final number of projects:', Array.isArray(projectsToLoad) ? projectsToLoad.length : 'Not an array');
+          dispatch({ type: 'SET_PROJECTS', payload: Array.isArray(projectsToLoad) ? projectsToLoad : [] });
           
         } catch (error) {
           console.error('Error loading projects:', error);
@@ -319,13 +325,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getProjectById = (id: string): Project | undefined => {
-    return (state.projects || []).find(p => p.id === id);
+    if (!Array.isArray(state.projects)) return undefined;
+    return state.projects.find(p => p.id === id);
   };
 
   const getProjectsByRole = (role: string): Project[] => {
-    if (!state.user) return [];
-    return (state.projects || []).filter(project => {
-      const assignedUsers = project.assignedUsers[role as keyof typeof project.assignedUsers];
+    if (!state.user) {
+      console.log('getProjectsByRole: No user found');
+      return [];
+    }
+    if (!Array.isArray(state.projects)) {
+      console.log('getProjectsByRole: Projects is not an array:', typeof state.projects);
+      return [];
+    }
+    return state.projects.filter(project => {
+      const assignedUsers = project.assignedUsers?.[role as keyof typeof project.assignedUsers];
       return assignedUsers?.includes(state.user!.id);
     });
   };
@@ -340,7 +354,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!project) return false;
 
     // Check if user is assigned to the project
-    const assignedUsers = project.assignedUsers[state.user.role as keyof typeof project.assignedUsers];
+    const assignedUsers = project.assignedUsers?.[state.user.role as keyof typeof project.assignedUsers];
     if (!assignedUsers?.includes(state.user.id)) return false;
 
     // Check role permissions for stage
@@ -465,13 +479,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const refreshProjects = () => {
     console.log('AppContext: Refreshing projects from localStorage');
     const projectsFromStorage = loadProjectsFromStorage();
-    console.log('AppContext: Refreshed projects:', projectsFromStorage);
-    dispatch({ type: 'SET_PROJECTS', payload: projectsFromStorage });
+    console.log('AppContext: Refreshed projects:', Array.isArray(projectsFromStorage) ? projectsFromStorage : 'Not an array');
+    dispatch({ type: 'SET_PROJECTS', payload: Array.isArray(projectsFromStorage) ? projectsFromStorage : [] });
   };
 
   // Force reload projects from localStorage whenever state changes
   useEffect(() => {
-    if (state.projects.length > 0) {
+    if (Array.isArray(state.projects) && state.projects.length > 0) {
       console.log('AppContext: State changed, ensuring localStorage sync');
       saveProjectsToStorage(state.projects);
     }
@@ -483,7 +497,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     console.log('Primary storage:', localStorage.getItem('processcraft_projects'));
     console.log('Backup storage:', localStorage.getItem('processcraft_projects_backup'));
     console.log('Timestamp:', localStorage.getItem('processcraft_projects_timestamp'));
-    console.log('Current state projects:', state.projects);
+    console.log('Current state projects:', Array.isArray(state.projects) ? state.projects : 'Not an array:', typeof state.projects);
     console.log('========================');
   };
 

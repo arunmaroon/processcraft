@@ -300,7 +300,7 @@ export default function PRDManagementDashboard({
                     )}
                     <span className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(prd.status)}`}>
                       {getStatusIcon(prd.status)}
-                      <span>{prd.status.replace('_', ' ')}</span>
+                      <span>{prd.status?.replace('_', ' ') || 'Unknown'}</span>
                     </span>
                   </div>
                   
@@ -557,4 +557,5 @@ function CreatePRDForm({ project, onClose, onCreate }: CreatePRDFormProps) {
     </div>
   );
 }
+
 

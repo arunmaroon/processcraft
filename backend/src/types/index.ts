@@ -14,10 +14,24 @@ export type UserRole =
   | 'UX_WRITER' 
   | 'DEVELOPER';
 
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  status: 'active' | 'inactive' | 'archived';
+  createdAt: string;
+  updatedAt: string;
+  owner: string;
+  tags: string[];
+}
+
 export interface Project {
   id: string;
   name: string;
   description: string;
+  productId?: string; // Reference to the product this project belongs to
+  product?: Product; // Optional product details for display
   status: ProjectStatus;
   currentStage: WorkflowStage;
   createdAt: string;

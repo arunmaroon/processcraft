@@ -14,6 +14,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import Button from '../shared/Button';
+import { formatPRDMarkdown } from '../../utils/prdFormatter';
 
 interface PMFormData {
   step1: {
@@ -416,52 +417,13 @@ export default function PRDGenerator({
                     formData.step1.problemStatement.trim() !== '' &&
                     formData.step1.businessGoals.trim() !== '';
 
-  // Clean content function
-  const cleanContent = (content: string): string => {
-    if (!content || typeof content !== 'string') {
-      console.warn('cleanContent: Invalid content provided:', content);
-      return '';
-    }
-    
-    let cleaned;
-    try {
-      cleaned = content
-        // Remove all CSS class patterns (more comprehensive)
-        .replace(/\d+\s+[a-z-]+-[a-z0-9]+(?:\s+[a-z-]+-[a-z0-9]+)*/g, '')
-        .replace(/[a-z-]+-[a-z0-9]+(?:\s+[a-z-]+-[a-z0-9]+)*/g, '')
-        .replace(/\b\d+\b(?=\s*[a-z-]+-[a-z0-9]+)/g, '')
-        .replace(/\b\d+\b(?=\s*[a-z-]+-[a-z0-9]+)/g, '')
-        // Remove standalone numbers that are likely CSS artifacts
-        .replace(/\b\d+\b(?=\s*[a-z-]+)/g, '')
-        // Remove any remaining CSS-like patterns
-        .replace(/[a-z-]+-[a-z0-9]+/g, '')
-        // Clean up markdown artifacts
-        .replace(/##\s*/g, '')
-        .replace(/\*\*([^*]+)\*\*/g, '$1')
-        .replace(/\*([^*]+)\*/g, '$1')
-        .replace(/`([^`]+)`/g, '$1')
-        // Remove HTML tags that might be malformed
-        .replace(/<[^>]*>/g, '')
-        // Clean up extra spaces and line breaks
-        .replace(/\s+/g, ' ')
-        .replace(/\n\s+/g, '\n')
-        .replace(/\s+\n/g, '\n')
-        .replace(/\n\s*\n\s*\n/g, '\n\n')
-        .trim();
-    } catch (error) {
-      console.error('Error in cleanContent:', error);
-      return '';
-    }
-    
-    return cleaned;
-  };
 
   // If PRD already exists, show the PRD viewer instead of the form
   if (generatedPRD && !isEditing) {
   return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-gray-50">
         {/* Notion-style Header */}
-        <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
+        <div className="border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
           <div className="max-w-4xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -519,12 +481,16 @@ export default function PRDGenerator({
         </div>
 
         {/* Document Content */}
-        <div className="max-w-4xl mx-auto px-6 pb-8">
-          <div className="prose prose-lg max-w-none">
+        <div className="max-w-4xl mx-auto px-6 pb-12">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 md:p-12">
             <div 
-              className="text-gray-700 leading-relaxed"
+              className="prd-content"
+              style={{
+                fontSize: '16px',
+                lineHeight: '1.8'
+              }}
               dangerouslySetInnerHTML={{ 
-                __html: cleanContent(generatedPRD.content || '')
+                __html: formatPRDMarkdown(generatedPRD.content || '')
               }}
             />
           </div>
@@ -539,10 +505,17 @@ export default function PRDGenerator({
         {/* Header */}
         <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-xl font-semibold text-gray-900">PRD Generator</h1>
-            <p className="text-gray-500 text-sm">AI-powered PRD generation</p>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-sm">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">PRD Generator</h1>
+                <p className="text-gray-500 text-sm">AI-powered product requirements generation</p>
+              </div>
+            </div>
           </div>
-      </div>
+        </div>
 
         {/* Success Message */}
         {showSuccess && (

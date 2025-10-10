@@ -1,252 +1,157 @@
 export interface Agent {
   id: string;
   name: string;
-  avatar_url?: string;
-  
-  // Demographics
-  age?: number;
-  gender?: string;
-  location?: {
-    city: string;
-    state: string;
-    country: string;
-    tier: string;
-  };
-  education?: string;
-  occupation?: string;
-  industry?: string;
-  income_range?: string;
-  family_status?: string;
-  
-  // Behavioral Traits
-  personality?: {
-    openness: number;
-    conscientiousness: number;
-    extraversion: number;
-    agreeableness: number;
-    neuroticism: number;
-    [key: string]: any;
-  };
-  communication_style?: {
-    directness: number;
-    formality: number;
-    emotional_expression: number;
-    detail_level: number;
-    [key: string]: any;
-  };
-  risk_tolerance?: string;
-  tech_comfort?: string;
-  financial_behavior?: {
-    spending_pattern: string;
-    saving_habits: string;
-    investment_approach: string;
-    [key: string]: any;
-  };
-  decision_making_style?: string;
-  
-  // Financial Profile
-  credit_score_range?: string;
-  banking_history?: any;
-  loan_history?: any;
-  investment_behavior?: any;
-  spending_patterns?: any;
-  
-  // Psychological Profile
-  motivations?: string[];
-  fears?: string[];
-  values?: string[];
-  aspirations?: string[];
-  pain_points?: string[];
-  
-  // Interaction Patterns
-  response_patterns?: any;
-  emotional_triggers?: any;
-  conversation_style?: any;
-  typical_phrases?: string[];
-  
-  // Performance Metrics
-  consistency_score?: number;
-  realism_score?: number;
-  engagement_score?: number;
-  usage_count?: number;
-  
-  // Metadata
-  created_from?: string;
-  generation_method?: string;
-  quality_flags?: any;
-  tags?: string[];
-  notes?: string;
-  
-  created_at?: Date;
-  updated_at?: Date;
-}
-
-export interface Conversation {
-  id: string;
-  agent_id: string;
-  session_id: string;
-  user_message: string;
-  agent_response: string;
-  emotional_state?: string;
-  context_awareness?: any;
-  relationship_with_interviewer?: string;
-  energy_level?: number;
-  topics_covered?: string[];
-  decisions_made?: any[];
-  evolving_opinions?: any;
-  response_time_ms?: number;
-  quality_score?: number;
-  created_at?: Date;
-}
-
-export interface ResearchData {
-  id: string;
-  filename: string;
-  original_name: string;
-  file_type: string;
-  file_size: number;
-  file_path: string;
-  content?: string;
-  processed_content?: string;
-  insights?: any;
-  quality_score?: number;
-  processing_status: 'pending' | 'processing' | 'completed' | 'failed';
-  error_message?: string;
-  metadata?: any;
-  created_at?: Date;
-  updated_at?: Date;
-}
-
-export interface AgentGenerationCriteria {
+  persona: string;
   demographics: {
-    age?: { min: number; max: number };
-    income?: string;
-    education?: string;
-    occupation?: string;
-    location?: string;
-    family_status?: string;
+    age: number;
+    location: string;
+    occupation: string;
+    income: string;
+    education: string;
+    familyStatus: string;
+    techSavviness: 'low' | 'medium' | 'high' | 'expert';
+    englishLiteracy: 'basic' | 'intermediate' | 'fluent' | 'native';
   };
-  behavioral: {
-    personality_traits?: string[];
-    communication_style?: string;
-    risk_tolerance?: string;
-    tech_comfort?: string;
-    decision_making?: string;
+  personality: {
+    traits: string[];
+    communicationStyle: 'direct' | 'conversational' | 'formal' | 'casual';
+    decisionMaking: 'analytical' | 'intuitive' | 'collaborative' | 'independent';
+    riskTolerance: 'low' | 'medium' | 'high';
+    emotionalTendency: 'reserved' | 'expressive' | 'balanced';
   };
-  psychological: {
-    motivations?: string[];
-    fears?: string[];
-    values?: string[];
-    aspirations?: string[];
+  knowledge: {
+    fintechLevel: 'novice' | 'intermediate' | 'advanced' | 'expert';
+    domainExpertise: string[];
+    commonMisconceptions: string[];
+    learningStyle: 'visual' | 'auditory' | 'kinesthetic' | 'reading';
   };
-  financial: {
-    credit_profile?: string;
-    banking_behavior?: string;
-    investment_style?: string;
-    spending_patterns?: string;
+  behaviors: {
+    responsePatterns: string[];
+    hesitationTriggers: string[];
+    confidenceLevel: number; // 0-1
+    typicalQuestions: string[];
+    painPoints: string[];
   };
-  sample_size?: number;
-  quality_threshold?: number;
+  preferences: {
+    interfaceStyle: 'simple' | 'detailed' | 'minimal' | 'comprehensive';
+    informationDensity: 'low' | 'medium' | 'high';
+    interactionMode: 'guided' | 'exploratory' | 'efficient';
+  };
+  background: {
+    workExperience: string;
+    family: string;
+    lifestyle: string;
+    goals: string[];
+    concerns: string[];
+  };
+  quote: string;
+  avatar?: string;
+  status: 'active' | 'inactive' | 'busy';
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface TestScenario {
+export interface ChatMessage {
   id: string;
-  name: string;
-  description: string;
-  initialMessage: string;
-  expectedBehaviors: string[];
-  difficulty: 'easy' | 'medium' | 'hard';
-}
-
-export interface TestResult {
-  type: 'scenario' | 'consistency';
-  scenario?: string;
-  response?: string;
-  expectedBehaviors?: string[];
-  foundBehaviors?: string[];
-  behaviorScore?: number;
-  responseLength?: number;
-  consistencyScores?: Record<string, number>;
-  overallConsistency?: number;
-  answers?: Record<string, string[]>;
+  agentId: string;
+  content: string;
+  type: 'text' | 'image' | 'system';
   timestamp: Date;
+  isTyping?: boolean;
+  metadata?: {
+    confidence?: number;
+    emotion?: string;
+    hesitation?: boolean;
+    reasoning?: string;
+  };
+  attachments?: {
+    type: 'image' | 'document';
+    url: string;
+    description?: string;
+  }[];
 }
 
-export interface AgentMemory {
-  conversation_history: Array<{
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: string;
-  }>;
-  emotional_state: string;
-  context_awareness: any;
-  relationship_with_interviewer: string;
-  energy_level: number;
-  topics_covered: string[];
-  decisions_made: any[];
-  evolving_opinions: any;
-  last_updated: string;
-}
-
-export interface User {
+export interface ChatSession {
   id: string;
-  email: string;
-  role: 'super_admin' | 'admin' | 'viewer';
-  mfa_enabled?: boolean;
-  last_login?: Date;
-  created_at?: Date;
-}
-
-export interface AuthResponse {
-  success: boolean;
-  token?: string;
-  user?: User;
-  error?: string;
-  code?: string;
-}
-
-export interface PaginationInfo {
-  page: number;
-  limit: number;
-  total: number;
-  pages: number;
-}
-
-export interface AgentListResponse {
-  success: boolean;
-  agents: Agent[];
-  pagination: PaginationInfo;
+  agentIds: [string, string];
+  messages: ChatMessage[];
+  context: {
+    topic?: string;
+    designPhase?: string;
+    researchGoal?: string;
+    userInput?: string;
+  };
+  memory: {
+    conversationHistory: string[];
+    keyInsights: string[];
+    userPreferences: Record<string, any>;
+    designFeedback: Record<string, any>;
+  };
+  status: 'active' | 'paused' | 'completed';
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface AgentResponse {
-  success: boolean;
-  agent?: Agent;
-  error?: string;
-  code?: string;
-}
-
-export interface ChatResponse {
-  success: boolean;
-  response?: string;
-  sessionId?: string;
-  responseTime?: number;
-  agent?: {
-    id: string;
-    name: string;
-    demographics: any;
+  message: string;
+  confidence: number;
+  emotion: string;
+  reasoning: string;
+  followUpQuestions?: string[];
+  designFeedback?: {
+    usability: number;
+    aesthetics: number;
+    functionality: number;
+    accessibility: number;
+    overall: number;
+    comments: string;
   };
-  error?: string;
-  code?: string;
 }
 
-export interface GenerationResponse {
-  success: boolean;
-  agents?: Agent[];
-  count?: number;
-  error?: string;
-  code?: string;
+export interface ChatInput {
+  text?: string;
+  image?: File | string;
+  context?: {
+    designPhase: string;
+    researchGoal: string;
+    specificQuestion?: string;
+  };
 }
 
+export interface AgentSelection {
+  agent1: Agent | null;
+  agent2: Agent | null;
+  comparisonMode: boolean;
+}
 
+export interface MemoryContext {
+  sessionId: string;
+  agentId: string;
+  conversationHistory: ChatMessage[];
+  userContext: Record<string, any>;
+  designContext: Record<string, any>;
+}
 
+export interface EthicalGuardrails {
+  biasDetection: boolean;
+  inappropriateContent: boolean;
+  privacyProtection: boolean;
+  culturalSensitivity: boolean;
+  accessibilityCompliance: boolean;
+}
 
+export interface ChatConfig {
+  maxTokens: number;
+  temperature: number;
+  model: string;
+  enableMemory: boolean;
+  enableEthicalGuardrails: boolean;
+  responseDelay: {
+    min: number;
+    max: number;
+  };
+  typingSpeed: {
+    min: number;
+    max: number;
+  };
+}

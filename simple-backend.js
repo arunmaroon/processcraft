@@ -3,259 +3,356 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const axios = require('axios');
-const AdvancedPersonaGenerator = require('./backend/src/services/advancedPersonaGenerator');
-const RedisService = require('./backend/src/services/redisService');
-const VectorSearchService = require('./backend/src/services/vectorSearchService');
-const AnalyticsService = require('./backend/src/services/analyticsService');
+const XLSX = require('xlsx');
+const { v4: uuidv4 } = require('uuid');
+
 const app = express();
-const PORT = 3001;
-
-// Initialize advanced services
-const personaGenerator = new AdvancedPersonaGenerator();
-const redisService = new RedisService();
-const vectorSearchService = new VectorSearchService();
-const analyticsService = new AnalyticsService();
-
-// Simple in-memory project storage
-let projects = [
-  {
-    id: '1',
-    name: 'DigiGold Mobile App',
-    description: 'A mobile banking app for digital gold investment',
-    status: 'IN_PROGRESS',
-    currentStage: 'RESEARCH',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    assignedUsers: {
-      PM: ['1'],
-      DESIGNER: ['2'],
-      DESIGN_HEAD: ['3']
-    },
-    prd: {
-      id: 'prd-1',
-      objectives: [
-        'Enable users to buy and sell digital gold',
-        'Provide real-time gold price tracking',
-        'Offer secure wallet functionality'
-      ],
-      targetUsers: [
-        'Tech-savvy millennials (25-35)',
-        'Investment enthusiasts',
-        'Mobile-first users'
-      ],
-      successMetrics: [
-        'User acquisition rate > 1000/month',
-        'Transaction volume > $100K/month',
-        'User retention > 80% after 3 months'
-      ],
-      businessContext: 'Digital gold is becoming increasingly popular as an investment option.',
-      constraints: [
-        'Must comply with financial regulations',
-        'Maximum 2-second load time',
-        'Support for iOS and Android'
-      ],
-      status: 'APPROVED',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    prds: [], // New multi-PRD support
-    activePRDId: null,
-    approvals: [],
-    version: 1
-  }
-];
-
-// Initialize Redis connection
-redisService.connect().then(() => {
-  console.log('✅ Redis service initialized');
-}).catch(err => {
-  console.log('⚠️ Redis not available, using fallback storage');
-});
+const PORT = 7501;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:2000', 'http://localhost:3000'],
+  origin: ['http://localhost:2000', 'http://localhost:3000', 'http://localhost:5001', 'http://localhost:7500'],
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Configure multer for file uploads
+// File upload configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = './uploads';
+    const uploadDir = 'uploads/';
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
+    fileSize: 50 * 1024 * 1024 // 50MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    console.log(`Uploading file: ${file.originalname} (${file.mimetype})`);
+    cb(null, true);
   }
 });
 
-// Health check
+// Human-like agent data
+const humanAgents = {
+  'priya-sharma': {
+    id: 'priya-sharma',
+    name: 'Priya Sharma',
+    demographics: {
+      age: 28,
+      location: 'Bangalore',
+      occupation: 'Software Engineer',
+      familyStatus: 'single',
+      education: 'B.Tech Computer Science',
+      income: '₹8L-₹12L',
+      techSavviness: 'expert',
+      englishLiteracy: 'native'
+    },
+    personality: {
+      traits: ['analytical', 'curious', 'helpful', 'detail-oriented', 'innovative', 'tech-savvy'],
+      communicationStyle: 'conversational',
+      emotionalTendency: 'expressive'
+    },
+    background: {
+      workExperience: '5+ years in fintech startups',
+      goals: ['build innovative products', 'advance career', 'learn new technologies'],
+      concerns: ['work-life balance', 'keeping up with tech trends']
+    },
+    speakingPatterns: [
+      'I love how this works technically',
+      'From my experience in fintech...',
+      'This is really interesting from a UX perspective',
+      'I can see potential improvements here',
+      'The technical architecture looks solid',
+      'This reminds me of similar challenges I\'ve faced'
+    ],
+    confusionResponses: [
+      'I need more context to understand this properly',
+      'Could you explain the technical requirements?',
+      'I\'m not sure about the implementation details'
+    ],
+    excitementResponses: [
+      'This is brilliant! I love the approach',
+      'Wow, this is exactly what I was looking for',
+      'This is so much better than what I\'ve seen before'
+    ]
+  },
+  'rajesh-kumar': {
+    id: 'rajesh-kumar',
+    name: 'Rajesh Kumar',
+    demographics: {
+      age: 45,
+      location: 'Mumbai',
+      occupation: 'Small Business Owner',
+      familyStatus: 'married',
+      education: 'High School',
+      income: '₹4L-₹6L',
+      techSavviness: 'low',
+      englishLiteracy: 'basic'
+    },
+    personality: {
+      traits: ['cautious', 'practical', 'family-oriented', 'traditional', 'hardworking'],
+      communicationStyle: 'direct',
+      emotionalTendency: 'reserved'
+    },
+    background: {
+      workExperience: '20+ years running small business',
+      goals: ['provide for family', 'grow business safely', 'learn new skills gradually'],
+      concerns: ['data security', 'making mistakes', 'wasting money', 'family safety']
+    },
+    speakingPatterns: [
+      'मुझे यह समझ नहीं आ रहा',
+      'यह safe है ना?',
+      'मैं गलती नहीं करना चाहता',
+      'क्या आप help कर सकते हैं?',
+      'मेरे family के लिए ठीक होगा ना?',
+      'यह बहुत complicated लग रहा है',
+      'मुझे simple चीजें पसंद हैं'
+    ],
+    confusionResponses: [
+      'मुझे समझ नहीं आ रहा। क्या आप explain कर सकते हैं?',
+      'यह कैसे काम करता है?',
+      'मैं confused हूं। Help कर सकते हैं?'
+    ],
+    excitementResponses: [
+      'यह तो अच्छा है!',
+      'मुझे यह पसंद है',
+      'बहुत बढ़िया!'
+    ]
+  },
+  'sneha-patel': {
+    id: 'sneha-patel',
+    name: 'Sneha Patel',
+    demographics: {
+      age: 32,
+      location: 'Delhi',
+      occupation: 'Marketing Manager',
+      familyStatus: 'married',
+      education: 'MBA Marketing',
+      income: '₹6L-₹8L',
+      techSavviness: 'medium',
+      englishLiteracy: 'fluent'
+    },
+    personality: {
+      traits: ['creative', 'social', 'organized', 'ambitious', 'detail-oriented'],
+      communicationStyle: 'conversational',
+      emotionalTendency: 'expressive'
+    },
+    background: {
+      workExperience: '8+ years in digital marketing',
+      goals: ['grow career', 'learn new skills', 'balance work and family'],
+      concerns: ['staying relevant', 'work-life balance', 'team management']
+    },
+    speakingPatterns: [
+      'From a marketing perspective, this looks great',
+      'I can see how this would appeal to customers',
+      'This is really user-friendly, which is important',
+      'I like how this simplifies the process',
+      'This could really help with customer engagement'
+    ],
+    confusionResponses: [
+      'I\'m not sure I understand the target audience',
+      'Could you explain the marketing strategy?',
+      'I need more details about the user journey'
+    ],
+    excitementResponses: [
+      'This is perfect for our target market!',
+      'I love how user-friendly this is',
+      'This will definitely improve customer satisfaction'
+    ]
+  }
+};
+
+// Chat sessions storage
+const chatSessions = new Map();
+
+// AI Agent storage (in-memory for now)
+const aiAgents = new Map();
+const uploads = new Map();
+
+// Routes
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    message: 'Human-like AI Chat System is running'
   });
 });
 
-// Project Management Routes
-// GET /api/projects - Get all projects
 app.get('/api/projects', (req, res) => {
-  try {
-    console.log(`📋 Returning ${projects.length} projects`);
-    res.json(projects);
-  } catch (error) {
-    console.error('❌ Error fetching projects:', error);
-    res.status(500).json({ error: 'Failed to fetch projects' });
-  }
-});
-
-// GET /api/projects/:id - Get project by ID
-app.get('/api/projects/:id', (req, res) => {
-  try {
-    const project = projects.find(p => p.id === req.params.id);
-    if (!project) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
-    console.log(`📋 Returning project: ${project.name} (ID: ${project.id})`);
-    res.json(project);
-  } catch (error) {
-    console.error('❌ Error fetching project:', error);
-    res.status(500).json({ error: 'Failed to fetch project' });
-  }
-});
-
-// POST /api/projects - Create new project
-app.post('/api/projects', (req, res) => {
-  try {
-    const projectData = req.body;
-    console.log('📝 Creating new project:', projectData.name);
-    
-    const newProject = {
-      id: Date.now().toString(),
-      ...projectData,
-      prds: projectData.prds || [],
-      activePRDId: projectData.activePRDId || null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      version: 1
-    };
-    
-    projects.push(newProject);
-    console.log(`✅ Project created successfully: ${newProject.name} (ID: ${newProject.id})`);
-    
-    res.status(201).json(newProject);
-  } catch (error) {
-    console.error('❌ Error creating project:', error);
-    res.status(500).json({ error: 'Failed to create project' });
-  }
-});
-
-// PUT /api/projects/:id - Update project
-app.put('/api/projects/:id', (req, res) => {
-  try {
-    const projectId = req.params.id;
-    const projectData = req.body;
-    
-    console.log(`📝 Updating project: ${projectId}`);
-    
-    const projectIndex = projects.findIndex(p => p.id === projectId);
-    if (projectIndex === -1) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
-    
-    const updatedProject = {
-      ...projects[projectIndex],
-      ...projectData,
-      id: projectId, // Ensure ID doesn't change
-      updatedAt: new Date().toISOString(),
-      version: projects[projectIndex].version + 1
-    };
-    
-    projects[projectIndex] = updatedProject;
-    console.log(`✅ Project updated successfully: ${updatedProject.name} (ID: ${updatedProject.id})`);
-    res.json(updatedProject);
-  } catch (error) {
-    console.error('❌ Error updating project:', error);
-    res.status(500).json({ error: 'Failed to update project' });
-  }
-});
-
-// DELETE /api/projects/:id - Delete project
-app.delete('/api/projects/:id', (req, res) => {
-  try {
-    const projectId = req.params.id;
-    console.log(`🗑️ Deleting project: ${projectId}`);
-    
-    const projectIndex = projects.findIndex(p => p.id === projectId);
-    if (projectIndex === -1) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
-    
-    projects.splice(projectIndex, 1);
-    console.log(`✅ Project deleted successfully: ${projectId}`);
-    res.json({ message: 'Project deleted successfully' });
-  } catch (error) {
-    console.error('❌ Error deleting project:', error);
-    res.status(500).json({ error: 'Failed to delete project' });
-  }
-});
-
-// Notifications endpoint
-app.get('/api/notifications', (req, res) => {
-  res.json([]);
-});
-
-// Versions endpoint
-app.get('/api/versions', (req, res) => {
-  res.json([]);
-});
-
-// Admin Research endpoints
-app.get('/api/research-central', (req, res) => {
+  console.log('📋 Returning 1 projects');
   res.json({
-    agents: [],
-    uploads: [],
-    aiAgents: [],
-    personas: []
+    success: true,
+    projects: [
+      {
+        id: 'project-1',
+        name: 'UX Research Chat System',
+        description: 'AI-powered dual-agent chat for UX research',
+        status: 'active',
+        currentStage: 'USER_RESEARCH',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        assignedUsers: {
+          PM: ['1'],
+          RESEARCHER: ['2'],
+          UX_DESIGNER: ['3'],
+          UI_DESIGNER: ['4'],
+          VISUAL_DESIGNER: ['5'],
+          UX_WRITER: ['6'],
+          DEVELOPER: ['7']
+        },
+        approvals: []
+      }
+    ]
   });
+});
+
+// Get all human-like agents
+app.get('/api/agents', (req, res) => {
+  try {
+    const agents = Object.values(humanAgents);
+    console.log(`🤖 Returning ${agents.length} human-like agents`);
+    res.json({ success: true, agents });
+  } catch (error) {
+    console.error('Error fetching agents:', error);
+    res.status(500).json({ error: 'Failed to fetch agents' });
+  }
+});
+
+// Create chat session
+app.post('/api/chat/session', (req, res) => {
+  try {
+    const { agentIds } = req.body;
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const session = {
+      id: sessionId,
+      agentIds: agentIds || ['priya-sharma', 'rajesh-kumar'],
+      messages: [],
+      status: 'active',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    chatSessions.set(sessionId, session);
+    
+    console.log(`💬 Created chat session: ${sessionId}`);
+    res.json({ success: true, session });
+  } catch (error) {
+    console.error('Error creating session:', error);
+    res.status(500).json({ error: 'Failed to create session' });
+  }
+});
+
+// Send message to agent
+app.post('/api/chat/message', (req, res) => {
+  try {
+    const { sessionId, agentId, input } = req.body;
+    
+    if (!sessionId || !agentId || !input) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const session = chatSessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    const agent = humanAgents[agentId];
+    if (!agent) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+
+    // Generate human-like response
+    const response = generateHumanResponse(agent, input.text || 'Please analyze this image and provide feedback.');
+    const emotion = detectEmotion(response, agent);
+    const confidence = calculateConfidence(response, agent);
+
+    const responseData = {
+      message: response,
+      confidence,
+      emotion,
+      reasoning: generateReasoning(agent, response),
+      designFeedback: input.image ? generateDesignFeedback(agent, response) : undefined
+    };
+
+    const message = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      agentId,
+      content: response,
+      type: input.image ? 'image' : 'text',
+      timestamp: new Date(),
+      metadata: {
+        confidence,
+        emotion,
+        hesitation: confidence < 0.6,
+        reasoning: responseData.reasoning
+      },
+      attachments: input.image ? [{
+        type: 'image',
+        url: typeof input.image === 'string' ? input.image : 'data:image/jpeg;base64,' + input.image,
+        description: 'User uploaded image'
+      }] : undefined
+    };
+
+    session.messages.push(message);
+    session.updatedAt = new Date();
+
+    console.log(`💬 ${agent.name} responded: ${response.substring(0, 50)}...`);
+    res.json({ response: responseData, message });
+  } catch (error) {
+    console.error('Message processing error:', error);
+    res.status(500).json({ error: 'Failed to process message' });
+  }
 });
 
 // File upload endpoint
-app.post('/api/admin-research/upload', upload.array('files'), (req, res) => {
+app.post('/api/upload', upload.single('file'), (req, res) => {
   try {
-    console.log('File upload request received:', req.files);
+    console.log('General file upload request received:', req.file);
     
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'No files uploaded' });
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const uploadedFiles = req.files.map(file => ({
+    const fileExtension = path.extname(req.file.originalname).toLowerCase();
+    const mimeType = req.file.mimetype;
+    
+    let category = 'document';
+    if (mimeType.startsWith('image/')) category = 'image';
+    else if (mimeType.startsWith('video/')) category = 'video';
+    else if (mimeType.startsWith('audio/')) category = 'audio';
+    else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(fileExtension)) category = 'archive';
+    else if (['js', 'css', 'html', 'xml', 'json'].includes(fileExtension)) category = 'code';
+    else if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'rtf'].includes(fileExtension)) category = 'document';
+    
+    const uploadedFile = {
       id: Date.now() + Math.random(),
-      name: file.originalname,
-      size: file.size,
-      type: path.extname(file.originalname).substring(1),
+      name: req.file.originalname,
+      size: req.file.size,
+      type: fileExtension,
+      mimeType: mimeType,
+      category: category,
       uploadedAt: new Date().toISOString(),
-      path: file.path,
-      status: 'UPLOADED'
-    }));
+      path: req.file.path,
+      status: 'UPLOADED',
+      canProcess: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'csv', 'rtf', 'jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)
+    };
 
     res.json({
       success: true,
-      message: 'Files uploaded successfully',
-      files: uploadedFiles
+      message: 'File uploaded successfully',
+      file: uploadedFile
     });
   } catch (error) {
     console.error('Upload error:', error);
@@ -263,1115 +360,1293 @@ app.post('/api/admin-research/upload', upload.array('files'), (req, res) => {
   }
 });
 
-// Process documents endpoint
-app.post('/api/admin-research/process-documents', async (req, res) => {
+// Excel agent creation
+app.post('/api/agents/upload-excel', upload.single('excelFile'), async (req, res) => {
   try {
-    console.log('Process documents request:', req.body);
+    console.log('Excel file upload request received:', req.file);
     
+    if (!req.file) {
+      return res.status(400).json({ error: 'No Excel file uploaded' });
+    }
+
+    const fileExtension = path.extname(req.file.originalname).toLowerCase();
+    if (!['.xlsx', '.xls'].includes(fileExtension)) {
+      return res.status(400).json({ error: 'Only Excel files (.xlsx, .xls) are supported for agent creation' });
+    }
+
+    console.log('Reading Excel file from:', req.file.path);
+    const workbook = XLSX.readFile(req.file.path);
+    console.log('Workbook sheets:', workbook.SheetNames);
+    
+    const agents = [];
+    const sheets = [];
+
+    workbook.SheetNames.forEach(sheetName => {
+      console.log('Processing sheet:', sheetName);
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      
+      console.log('Sheet data length:', jsonData.length);
+      
+      if (jsonData.length === 0) return;
+
+      const headers = jsonData[0];
+      const rows = jsonData.slice(1);
+      
+      console.log('Headers:', headers);
+      console.log('Rows count:', rows.length);
+      
+      const data = rows.map(row => {
+        const obj = {};
+        headers.forEach((header, index) => {
+          obj[header] = row[index] || '';
+        });
+        return obj;
+      });
+
+      sheets.push({
+        sheetName,
+        headers,
+        data
+      });
+
+      data.forEach((rowData, index) => {
+        console.log(`Creating agent from row ${index + 1}:`, rowData);
+        const agent = createAgentFromRowData(rowData, sheetName, index);
+        if (agent) {
+          agents.push(agent);
+          console.log('Created agent:', agent.name);
+        }
+      });
+    });
+
+    fs.unlinkSync(req.file.path);
+
+    res.json({
+      success: true,
+      message: `Successfully created ${agents.length} agents from ${sheets.length} sheets`,
+      agents,
+      sheets: sheets.map(sheet => ({
+        name: sheet.sheetName,
+        agentCount: sheet.data.length,
+        headers: sheet.headers
+      })),
+      summary: {
+        totalAgents: agents.length,
+        totalSheets: sheets.length,
+        agentsBySheet: sheets.map(sheet => ({
+          sheetName: sheet.sheetName,
+          count: sheet.data.length
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Excel upload error:', error);
+    res.status(500).json({ error: 'Failed to process Excel file: ' + error.message });
+  }
+});
+
+// Excel template download
+app.get('/api/agents/excel-template', (req, res) => {
+  try {
+    console.log('Generating Excel template...');
+    
+    const templateData = [
+      {
+        'Name': 'Priya Sharma',
+        'Age': 28,
+        'Location': 'Bangalore',
+        'Occupation': 'Software Engineer',
+        'Tech Savviness': 'expert',
+        'English Literacy': 'native',
+        'Personality Traits': 'analytical,curious,helpful',
+        'Background': '5+ years in fintech startups',
+        'Goals': 'build innovative products,advance career',
+        'Concerns': 'work-life balance,keeping up with tech trends'
+      },
+      {
+        'Name': 'Rajesh Kumar',
+        'Age': 45,
+        'Location': 'Mumbai',
+        'Occupation': 'Small Business Owner',
+        'Tech Savviness': 'low',
+        'English Literacy': 'basic',
+        'Personality Traits': 'cautious,practical,family-oriented',
+        'Background': '20+ years running small business',
+        'Goals': 'provide for family,grow business safely',
+        'Concerns': 'data security,making mistakes,wasting money'
+      }
+    ];
+
+    console.log('Creating worksheet...');
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Agents');
+    
+    console.log('Writing Excel buffer...');
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    
+    console.log('Buffer size:', buffer.length);
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=agent-template.xlsx');
+    res.setHeader('Content-Length', buffer.length);
+    res.send(buffer);
+  } catch (error) {
+    console.error('Template generation error:', error);
+    res.status(500).json({ error: 'Failed to generate template: ' + error.message });
+  }
+});
+
+// Helper functions for human-like responses
+function generateHumanResponse(agent, userMessage) {
+  const { demographics, personality, speakingPatterns, confusionResponses, excitementResponses } = agent;
+  
+  // Analyze user message for context
+  const lowerMessage = userMessage.toLowerCase();
+  const isQuestion = lowerMessage.includes('?') || lowerMessage.includes('how') || lowerMessage.includes('what') || lowerMessage.includes('why');
+  const isConfused = lowerMessage.includes('confused') || lowerMessage.includes('help') || lowerMessage.includes('explain');
+  const isExcited = lowerMessage.includes('great') || lowerMessage.includes('amazing') || lowerMessage.includes('love');
+  
+  // Generate response based on agent personality and context
+  if (demographics.techSavviness === 'low' && demographics.englishLiteracy === 'basic') {
+    // Novice user with basic English - use Hinglish
+    if (isConfused) {
+      return confusionResponses[Math.floor(Math.random() * confusionResponses.length)];
+    } else if (isExcited) {
+      return excitementResponses[Math.floor(Math.random() * excitementResponses.length)];
+    } else {
+      return speakingPatterns[Math.floor(Math.random() * speakingPatterns.length)];
+    }
+  } else if (demographics.techSavviness === 'expert') {
+    // Tech-savvy user - use technical language
+    if (isQuestion) {
+      return 'That\'s a great question! From a technical perspective, I can see several interesting aspects here. What specific part are you most curious about?';
+    } else if (isConfused) {
+      return 'I need more context to give you a proper technical analysis. Could you provide more details about the requirements?';
+    } else {
+      return speakingPatterns[Math.floor(Math.random() * speakingPatterns.length)];
+    }
+  } else {
+    // Medium tech level - balanced approach
+    if (isQuestion) {
+      return 'I can see what you\'re asking about. Could you explain a bit more about what you\'re looking for?';
+    } else if (isConfused) {
+      return 'I\'m not entirely sure I understand. Could you help me with more context?';
+    } else {
+      return speakingPatterns[Math.floor(Math.random() * speakingPatterns.length)];
+    }
+  }
+}
+
+function detectEmotion(message, agent) {
+  const lowerMessage = message.toLowerCase();
+  
+  if (lowerMessage.includes('confused') || lowerMessage.includes('समझ नहीं') || 
+      lowerMessage.includes('complicated') || lowerMessage.includes('help')) {
+    return 'confused';
+  }
+  
+  if (lowerMessage.includes('safe') || lowerMessage.includes('mistake') || 
+      lowerMessage.includes('worried') || lowerMessage.includes('concerned') ||
+      lowerMessage.includes('family') || lowerMessage.includes('children')) {
+    return 'concerned';
+  }
+  
+  if (lowerMessage.includes('great') || lowerMessage.includes('amazing') || 
+      lowerMessage.includes('love') || lowerMessage.includes('brilliant') ||
+      lowerMessage.includes('अच्छा') || lowerMessage.includes('बढ़िया')) {
+    return 'excited';
+  }
+  
+  if (lowerMessage.includes('frustrated') || lowerMessage.includes('annoying') || 
+      lowerMessage.includes('difficult') || lowerMessage.includes('problem')) {
+    return 'frustrated';
+  }
+  
+  if (lowerMessage.includes('how') || lowerMessage.includes('why') || 
+      lowerMessage.includes('what') || lowerMessage.includes('explain') ||
+      lowerMessage.includes('कैसे') || lowerMessage.includes('क्यों')) {
+    return 'curious';
+  }
+  
+  return 'neutral';
+}
+
+function calculateConfidence(message, agent) {
+  let confidence = 0.7; // Base confidence
+  
+  // Adjust based on agent personality
+  if (agent.personality.traits.includes('confident')) {
+    confidence += 0.1;
+  }
+  if (agent.personality.traits.includes('cautious')) {
+    confidence -= 0.1;
+  }
+  
+  // Adjust based on response characteristics
+  if (message.includes('?')) {
+    confidence -= 0.1; // Questions indicate uncertainty
+  }
+  if (message.includes('I think') || message.includes('maybe') || message.includes('perhaps')) {
+    confidence -= 0.1; // Hedging language indicates uncertainty
+  }
+  if (message.includes('definitely') || message.includes('certainly') || message.includes('absolutely')) {
+    confidence += 0.1; // Strong language indicates confidence
+  }
+  
+  return Math.max(0.1, Math.min(1.0, confidence));
+}
+
+function generateReasoning(agent, response) {
+  const { personality, background } = agent;
+  
+  let reasoning = 'Based on my personal experience';
+  
+  if (background.workExperience) {
+    reasoning += ` and ${background.workExperience}`;
+  }
+  
+  if (personality.traits.includes('analytical')) {
+    reasoning += ', I analyzed this carefully';
+  }
+  
+  if (personality.traits.includes('practical')) {
+    reasoning += ' and considered the practical implications';
+  }
+  
+  return reasoning;
+}
+
+function generateDesignFeedback(agent, response) {
+  const { demographics, personality } = agent;
+  
+  // Generate feedback scores based on agent's perspective
+  const usability = demographics.techSavviness === 'low' ? 0.3 + Math.random() * 0.4 : 0.6 + Math.random() * 0.4;
+  const aesthetics = personality.traits.includes('creative') ? 0.7 + Math.random() * 0.3 : 0.5 + Math.random() * 0.5;
+  const functionality = 0.6 + Math.random() * 0.4;
+  const accessibility = demographics.techSavviness === 'low' ? 0.8 + Math.random() * 0.2 : 0.5 + Math.random() * 0.5;
+  const overall = (usability + aesthetics + functionality + accessibility) / 4;
+  
+  return {
+    usability,
+    aesthetics,
+    functionality,
+    accessibility,
+    overall,
+    comments: response
+  };
+}
+
+function createAgentFromRowData(rowData, sheetName, index) {
+  try {
+    const agentId = `agent_${sheetName}_${index}_${Date.now()}`;
+    
+    return {
+      id: agentId,
+      name: rowData.Name || `Agent ${index + 1}`,
+      demographics: {
+        age: parseInt(rowData.Age) || 30,
+        location: rowData.Location || 'Unknown',
+        occupation: rowData.Occupation || 'Unknown',
+        familyStatus: 'unknown',
+        education: 'Unknown',
+        income: 'Unknown',
+        techSavviness: rowData['Tech Savviness'] || 'medium',
+        englishLiteracy: rowData['English Literacy'] || 'intermediate'
+      },
+      personality: {
+        traits: (rowData['Personality Traits'] || '').split(',').map(t => t.trim()).filter(t => t),
+        communicationStyle: 'conversational',
+        emotionalTendency: 'neutral'
+      },
+      background: {
+        workExperience: rowData.Background || 'Unknown',
+        goals: (rowData.Goals || '').split(',').map(g => g.trim()).filter(g => g),
+        concerns: (rowData.Concerns || '').split(',').map(c => c.trim()).filter(c => c)
+      },
+      speakingPatterns: [
+        'I can see what you\'re asking about',
+        'From my experience, this looks interesting',
+        'I have some thoughts about this',
+        'This is worth considering'
+      ],
+      confusionResponses: [
+        'I\'m not sure I understand completely',
+        'Could you explain more about this?',
+        'I need more context to help properly'
+      ],
+      excitementResponses: [
+        'This looks really promising!',
+        'I\'m excited about this approach',
+        'This could be very useful'
+      ]
+    };
+  } catch (error) {
+    console.error('Error creating agent from row data:', error);
+    return null;
+  }
+}
+
+// AI Agent Upload Routes
+app.post('/api/agent-upload/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    console.log(`Processing uploaded file: ${req.file.originalname}`);
+    
+    // Generate upload ID
+    const uploadId = uuidv4();
+    
+    // Parse the uploaded file
+    const participants = await parseTranscriptFile(req.file.path);
+    
+    if (participants.length === 0) {
+      return res.status(400).json({ error: 'No valid participants found in file' });
+    }
+
+    // Create upload record
+    uploads.set(uploadId, {
+      id: uploadId,
+      filename: req.file.originalname,
+      participantCount: participants.length,
+      processedCount: 0,
+      status: 'processing',
+      createdAt: new Date()
+    });
+    
+    // Process participants in background
+    processParticipantsAsync(uploadId, participants, req.file.path);
+    
+    res.json({
+      success: true,
+      uploadId,
+      participantCount: participants.length,
+      status: 'processing',
+      message: 'File uploaded successfully. Processing participants...'
+    });
+    
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ 
+      error: 'Upload failed', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// GET /api/agent-upload/status/:uploadId
+app.get('/api/agent-upload/status/:uploadId', (req, res) => {
+  try {
+    const { uploadId } = req.params;
+    const status = uploads.get(uploadId);
+    
+    if (!status) {
+      return res.status(404).json({ error: 'Upload not found' });
+    }
+    
+    res.json({
+      uploadId: status.id,
+      filename: status.filename,
+      participantCount: status.participantCount,
+      processedCount: status.processedCount,
+      status: status.status,
+      progress: Math.round((status.processedCount / status.participantCount) * 100),
+      createdAt: status.createdAt,
+      completedAt: status.completedAt
+    });
+    
+  } catch (error) {
+    console.error('Status check error:', error);
+    res.status(500).json({ error: 'Failed to get upload status' });
+  }
+});
+
+// GET /api/agent-upload/agents
+app.get('/api/agent-upload/agents', (req, res) => {
+  try {
+    const agents = Array.from(aiAgents.values());
+    
+    res.json({
+      success: true,
+      agents: agents,
+      count: agents.length
+    });
+    
+  } catch (error) {
+    console.error('Error getting agents:', error);
+    res.status(500).json({ error: 'Failed to get agents' });
+  }
+});
+
+// AI Agent Chat Routes
+app.post('/api/agent-chat/start', (req, res) => {
+  try {
+    const { agentId, userId } = req.body;
+    
+    if (!agentId || !userId) {
+      return res.status(400).json({ error: 'agentId and userId are required' });
+    }
+    
+    // Get agent
+    const agent = aiAgents.get(agentId);
+    if (!agent) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+    
+    // Create chat session
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    chatSessions.set(sessionId, {
+      id: sessionId,
+      agentId,
+      userId,
+      createdAt: new Date()
+    });
+    
+    // Generate initial greeting
+    const greeting = generateInitialGreeting(agent);
+    
+    res.json({
+      success: true,
+      sessionId,
+      agent: {
+        id: agent.id,
+        name: agent.name,
+        age: agent.age,
+        occupation: agent.occupation,
+        category: agent.category,
+        avatar_url: agent.avatar_url,
+        tech_comfort: agent.tech_behavior?.actual_tech_comfort || 5,
+        personality_traits: agent.personality_traits || []
+      },
+      firstMessage: greeting
+    });
+    
+  } catch (error) {
+    console.error('Error starting chat session:', error);
+    res.status(500).json({ error: 'Failed to start chat session' });
+  }
+});
+
+app.post('/api/agent-chat/message', (req, res) => {
+  try {
+    const { sessionId, message } = req.body;
+    
+    if (!sessionId || !message) {
+      return res.status(400).json({ error: 'sessionId and message are required' });
+    }
+    
+    // Get session
+    const session = chatSessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    // Get agent
+    const agent = aiAgents.get(session.agentId);
+    if (!agent) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+    
+    // Generate response using agent's personality
+    const response = generateAgentResponse(agent, message);
+    const delay = calculateResponseDelay(message, response);
+    const emotion = detectEmotion(response);
+    
+    res.json({
+      success: true,
+      response: response,
+      delay: delay,
+      emotion: emotion,
+      confidence: 0.8,
+      timestamp: new Date()
+    });
+    
+  } catch (error) {
+    console.error('Error processing message:', error);
+    res.status(500).json({ error: 'Failed to process message' });
+  }
+});
+
+app.get('/api/agent-chat/agents', (req, res) => {
+  try {
+    const agents = Array.from(aiAgents.values());
+    
+    res.json({
+      success: true,
+      agents: agents,
+      count: agents.length
+    });
+    
+  } catch (error) {
+    console.error('Error getting agents:', error);
+    res.status(500).json({ error: 'Failed to get agents' });
+  }
+});
+
+// Helper functions for AI Agent system
+async function parseTranscriptFile(filePath) {
+  const fileExt = path.extname(filePath).toLowerCase();
+  
+  if (fileExt === '.csv') {
+    return parseCSVFile(filePath);
+  } else {
+    return parseExcelFile(filePath);
+  }
+}
+
+function parseExcelFile(filePath) {
+  try {
+    const workbook = XLSX.readFile(filePath);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    
+    if (jsonData.length < 2) {
+      throw new Error('File must have at least a header row and one data row');
+    }
+    
+    const headers = jsonData[0];
+    const rows = jsonData.slice(1);
+    
+    // Expected columns: Participant, Category, Age, Occupation, Full_Transcript
+    const participantIndex = headers.findIndex(h => 
+      h && h.toLowerCase().includes('participant')
+    );
+    const categoryIndex = headers.findIndex(h => 
+      h && h.toLowerCase().includes('category')
+    );
+    const ageIndex = headers.findIndex(h => 
+      h && h.toLowerCase().includes('age')
+    );
+    const occupationIndex = headers.findIndex(h => 
+      h && h.toLowerCase().includes('occupation')
+    );
+    const transcriptIndex = headers.findIndex(h => 
+      h && h.toLowerCase().includes('transcript')
+    );
+    
+    if (participantIndex === -1 || transcriptIndex === -1) {
+      throw new Error('Required columns not found. Expected: Participant, Full_Transcript');
+    }
+    
+    const participants = rows
+      .filter(row => row[participantIndex] && row[transcriptIndex])
+      .map(row => ({
+        participant: row[participantIndex]?.toString().trim() || 'Unknown',
+        category: row[categoryIndex]?.toString().trim() || 'General',
+        age: parseInt(row[ageIndex]) || 30,
+        occupation: row[occupationIndex]?.toString().trim() || 'Unknown',
+        transcript: row[transcriptIndex]?.toString().trim() || ''
+      }));
+    
+    console.log(`Parsed ${participants.length} participants from Excel file`);
+    return participants;
+    
+  } catch (error) {
+    console.error('Error parsing Excel file:', error);
+    throw error;
+  }
+}
+
+function parseCSVFile(filePath) {
+  try {
+    const csvContent = fs.readFileSync(filePath, 'utf-8');
+    const lines = csvContent.split('\n').filter(line => line.trim());
+    
+    if (lines.length < 2) {
+      throw new Error('CSV file must have at least a header row and one data row');
+    }
+    
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const rows = lines.slice(1).map(line => 
+      line.split(',').map(cell => cell.trim().replace(/"/g, ''))
+    );
+    
+    const participantIndex = headers.findIndex(h => 
+      h.toLowerCase().includes('participant')
+    );
+    const categoryIndex = headers.findIndex(h => 
+      h.toLowerCase().includes('category')
+    );
+    const ageIndex = headers.findIndex(h => 
+      h.toLowerCase().includes('age')
+    );
+    const occupationIndex = headers.findIndex(h => 
+      h.toLowerCase().includes('occupation')
+    );
+    const transcriptIndex = headers.findIndex(h => 
+      h.toLowerCase().includes('transcript')
+    );
+    
+    if (participantIndex === -1 || transcriptIndex === -1) {
+      throw new Error('Required columns not found. Expected: Participant, Full_Transcript');
+    }
+    
+    const participants = rows
+      .filter(row => row[participantIndex] && row[transcriptIndex])
+      .map(row => ({
+        participant: row[participantIndex]?.trim() || 'Unknown',
+        category: row[categoryIndex]?.trim() || 'General',
+        age: parseInt(row[ageIndex]) || 30,
+        occupation: row[occupationIndex]?.trim() || 'Unknown',
+        transcript: row[transcriptIndex]?.trim() || ''
+      }));
+    
+    console.log(`Parsed ${participants.length} participants from CSV file`);
+    return participants;
+    
+  } catch (error) {
+    console.error('Error parsing CSV file:', error);
+    throw error;
+  }
+}
+
+async function processParticipantsAsync(uploadId, participants, filePath) {
+  let processedCount = 0;
+  
+  try {
+    console.log(`Starting background processing for ${participants.length} participants`);
+    
+    for (const participant of participants) {
+      try {
+        console.log(`Processing participant: ${participant.participant}`);
+        
+        // Create a simple agent profile based on transcript analysis
+        const agent = createAgentFromTranscript(participant);
+        aiAgents.set(agent.id, agent);
+        
+        processedCount++;
+        console.log(`Successfully processed ${participant.participant} (${processedCount}/${participants.length})`);
+        
+        // Update progress
+        const upload = uploads.get(uploadId);
+        if (upload) {
+          upload.processedCount = processedCount;
+          uploads.set(uploadId, upload);
+        }
+        
+        // Add small delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+      } catch (error) {
+        console.error(`Error processing participant ${participant.participant}:`, error);
+        processedCount++;
+      }
+    }
+    
+    // Mark as completed
+    const upload = uploads.get(uploadId);
+    if (upload) {
+      upload.status = 'completed';
+      upload.completedAt = new Date();
+      uploads.set(uploadId, upload);
+    }
+    
+    console.log(`Background processing completed. Created ${processedCount} agents.`);
+    
+    // Clean up uploaded file
+    try {
+      fs.unlinkSync(filePath);
+      console.log(`Cleaned up uploaded file: ${filePath}`);
+    } catch (error) {
+      console.error('Error cleaning up file:', error);
+    }
+    
+  } catch (error) {
+    console.error('Background processing error:', error);
+    const upload = uploads.get(uploadId);
+    if (upload) {
+      upload.status = 'failed';
+      uploads.set(uploadId, upload);
+    }
+  }
+}
+
+function createAgentFromTranscript(participant) {
+  const agentId = `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  // Enhanced analysis of transcript
+  const transcript = participant.transcript.toLowerCase();
+  const words = transcript.split(' ');
+  const originalTranscript = participant.transcript; // Keep original for better quote extraction
+  
+  // Analyze speech patterns more thoroughly
+  const fillerWords = ['um', 'uh', 'like', 'you know', 'so', 'well', 'actually', 'basically', 'literally'].filter(word => 
+    transcript.includes(word)
+  );
+  
+  const questions = (transcript.match(/\?/g) || []).length;
+  const exclamations = (transcript.match(/!/g) || []).length;
+  const hesitations = (transcript.match(/\.\.\./g) || []).length;
+  
+  // More sophisticated tech comfort analysis
+  const techWords = ['app', 'website', 'online', 'digital', 'computer', 'phone', 'internet', 'software', 'technology', 'tech'];
+  const techMentions = techWords.filter(word => transcript.includes(word)).length;
+  const techComfort = Math.min(10, Math.max(1, techMentions * 1.5 + (questions > 3 ? 2 : 0)));
+  
+  // Enhanced emotional pattern detection
+  const frustrationWords = ['confused', 'difficult', 'hard', 'problem', 'issue', 'wrong', 'terrible', 'awful', 'hate', 'frustrated', 'annoying'];
+  const excitementWords = ['great', 'awesome', 'love', 'amazing', 'wonderful', 'excellent', 'fantastic', 'brilliant', 'perfect', 'incredible'];
+  const confusionWords = ['not sure', 'don\'t understand', 'confused', 'unclear', 'what do you mean', 'i don\'t get it'];
+  
+  const frustrationCount = frustrationWords.filter(word => transcript.includes(word)).length;
+  const excitementCount = excitementWords.filter(word => transcript.includes(word)).length;
+  const confusionCount = confusionWords.filter(word => transcript.includes(word)).length;
+  
+  // Extract better real quotes with context
+  const sentences = originalTranscript.split(/[.!?]+/).filter(s => s.trim().length > 15);
+  const realQuotes = sentences.slice(0, 8).map(s => s.trim()).filter(s => s.length > 20);
+  
+  // Extract specific emotional quotes
+  const frustratedQuotes = sentences.filter(s => 
+    frustrationWords.some(word => s.toLowerCase().includes(word))
+  ).slice(0, 3).map(s => s.trim());
+  
+  const excitedQuotes = sentences.filter(s => 
+    excitementWords.some(word => s.toLowerCase().includes(word))
+  ).slice(0, 3).map(s => s.trim());
+  
+  const confusedQuotes = sentences.filter(s => 
+    confusionWords.some(word => s.toLowerCase().includes(word))
+  ).slice(0, 3).map(s => s.trim());
+  
+  return {
+    id: agentId,
+    name: participant.participant,
+    age: participant.age,
+    occupation: participant.occupation,
+    category: participant.category,
+    avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${participant.participant}&backgroundColor=b6e3f4`,
+    transcript_text: participant.transcript,
+    speech_patterns: {
+      sentence_length: words.length > 20 ? 'long' : words.length > 10 ? 'medium' : 'short',
+      formality: questions > 5 ? 3 : 7,
+      filler_words: fillerWords,
+      common_phrases: extractCommonPhrases(participant.transcript),
+      self_corrections_frequency: questions > 3 ? 'frequent' : 'occasional',
+      question_asking_style: questions > 5 ? 'direct' : 'indirect'
+    },
+    vocabulary_analysis: {
+      complexity_level: Math.min(10, Math.max(1, words.length / 10)),
+      technical_terms_used: techWords.filter(word => transcript.includes(word)),
+      common_vocabulary: extractCommonWords(participant.transcript),
+      avoided_words: []
+    },
+    emotional_markers: {
+      excitement_triggers: excitementWords.filter(word => transcript.includes(word)),
+      frustration_points: frustrationWords.filter(word => transcript.includes(word)),
+      confusion_triggers: confusionWords.filter(word => transcript.includes(word)),
+      cautious_about: techComfort < 4 ? ['technology', 'new things', 'complex features'] : ['advanced features'],
+      confident_about: techComfort > 6 ? ['basic technology', 'simple apps'] : ['everyday tasks', 'simple things'],
+      excited_quotes: excitedQuotes,
+      frustrated_quotes: frustratedQuotes,
+      confused_quotes: confusedQuotes
+    },
+    cognitive_patterns: {
+      understanding_speed: techComfort < 4 ? 'slow' : techComfort > 7 ? 'fast' : 'medium',
+      need_for_examples: techComfort < 5,
+      question_before_action: questions > 3,
+      processes_info_style: 'practical'
+    },
+    tech_behavior: {
+      actual_tech_comfort: techComfort,
+      struggles_with: techComfort < 4 ? ['complex interfaces', 'technical terms'] : [],
+      navigates_well: techComfort > 6 ? ['simple apps', 'basic features'] : [],
+      asks_for_help_on: techComfort < 5 ? ['new features', 'complex tasks'] : []
+    },
+    real_quotes: realQuotes,
+    personality_data: {
+      agent_identity: {
+        name: participant.participant,
+        age: participant.age,
+        occupation: participant.occupation,
+        background_story: `A ${participant.age}-year-old ${participant.occupation} who participated in user research.`
+      },
+      communication_blueprint: {
+        typical_response_length: words.length > 30 ? 'paragraph' : '3-4 sentences',
+        response_speed: techComfort < 4 ? 'slow' : 'thoughtful',
+        verbosity: Math.min(10, Math.max(1, words.length / 5)),
+        uses_emojis: exclamations > 2,
+        punctuation_style: 'casual'
+      },
+      knowledge_boundaries: {
+        knows_confidently: techComfort > 6 ? ['basic technology'] : ['everyday tasks'],
+        knows_somewhat: ['new features'],
+        doesnt_know: techComfort < 4 ? ['complex technology'] : [],
+        pretends_to_know: []
+      },
+      behavioral_triggers: {
+        gets_frustrated_when: frustrationWords.filter(word => transcript.includes(word)),
+        gets_excited_when: excitementWords.filter(word => transcript.includes(word)),
+        needs_reassurance_about: ['safety', 'privacy'],
+        loses_interest_if: ['too complex', 'too technical']
+      },
+      conversation_memory_style: {
+        references_past_conversation: true,
+        forgets_details_easily: techComfort < 4,
+        asks_repeated_questions: questions > 5
+      }
+    },
+    personality_traits: extractPersonalityTraits(participant.transcript),
+    created_at: new Date(),
+    is_active: true
+  };
+}
+
+function extractCommonPhrases(transcript) {
+  const phrases = [];
+  const words = transcript.toLowerCase().split(' ');
+  
+  for (let i = 0; i < words.length - 1; i++) {
+    const phrase = `${words[i]} ${words[i + 1]}`;
+    if (phrase.length > 5 && !phrases.includes(phrase)) {
+      phrases.push(phrase);
+    }
+  }
+  
+  return phrases.slice(0, 5);
+}
+
+function extractCommonWords(transcript) {
+  const words = transcript.toLowerCase().split(' ')
+    .filter(word => word.length > 3)
+    .filter(word => !['this', 'that', 'with', 'from', 'they', 'them', 'have', 'been', 'will', 'would'].includes(word));
+  
+  const wordCount = {};
+  words.forEach(word => {
+    wordCount[word] = (wordCount[word] || 0) + 1;
+  });
+  
+  return Object.entries(wordCount)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 10)
+    .map(([word]) => word);
+}
+
+function extractPersonalityTraits(transcript) {
+  const traits = [];
+  const text = transcript.toLowerCase();
+  
+  if (text.includes('confused') || text.includes('difficult')) traits.push('cautious');
+  if (text.includes('love') || text.includes('great')) traits.push('enthusiastic');
+  if (text.includes('help') || text.includes('please')) traits.push('polite');
+  if (text.includes('think') || text.includes('maybe')) traits.push('thoughtful');
+  if (text.includes('sure') || text.includes('definitely')) traits.push('confident');
+  
+  return traits.length > 0 ? traits : ['friendly'];
+}
+
+function generateInitialGreeting(agent) {
+  const greetings = [
+    `Hi! I'm ${agent.name}. Nice to meet you!`,
+    `Hello there! I'm ${agent.name}, a ${agent.age}-year-old ${agent.occupation}.`,
+    `Hey! I'm ${agent.name}. What would you like to talk about?`,
+    `Hi! I'm ${agent.name}. I'm here to help with whatever you need.`,
+    `Hello! I'm ${agent.name}. How can I assist you today?`
+  ];
+  
+  return greetings[Math.floor(Math.random() * greetings.length)];
+}
+
+function generateAgentResponse(agent, userMessage) {
+  const { personality_data, speech_patterns, real_quotes, transcript_text, tech_behavior, emotional_markers } = agent;
+  
+  // Analyze user message to understand context
+  const userMessageLower = userMessage.toLowerCase();
+  const isQuestion = userMessage.includes('?');
+  const isTechRelated = /app|website|technology|digital|computer|phone|internet|software|tech/i.test(userMessage);
+  const isComplaint = /problem|issue|difficult|confusing|hard|wrong|bad|terrible/i.test(userMessage);
+  const isPraise = /great|good|excellent|amazing|wonderful|love|like/i.test(userMessage);
+  
+  // Generate context-aware response based on agent's actual transcript data
+  let response = '';
+  
+  // Use real quotes from transcript as base responses
+  if (real_quotes && real_quotes.length > 0) {
+    // Select appropriate quote based on context using enhanced emotional data
+    let selectedQuote = '';
+    
+    if (isTechRelated && tech_behavior.actual_tech_comfort < 4) {
+      // Low tech comfort - show confusion using confused quotes
+      if (emotional_markers.confused_quotes && emotional_markers.confused_quotes.length > 0) {
+        selectedQuote = emotional_markers.confused_quotes[Math.floor(Math.random() * emotional_markers.confused_quotes.length)];
+      } else {
+        selectedQuote = real_quotes.find(q => 
+          q.toLowerCase().includes('confused') || 
+          q.toLowerCase().includes('difficult') || 
+          q.toLowerCase().includes('not sure')
+        ) || real_quotes[0];
+      }
+    } else if (isPraise && emotional_markers.excitement_triggers.length > 0) {
+      // High excitement - use enthusiastic quotes
+      if (emotional_markers.excited_quotes && emotional_markers.excited_quotes.length > 0) {
+        selectedQuote = emotional_markers.excited_quotes[Math.floor(Math.random() * emotional_markers.excited_quotes.length)];
+      } else {
+        selectedQuote = real_quotes.find(q => 
+          q.toLowerCase().includes('great') || 
+          q.toLowerCase().includes('love') || 
+          q.toLowerCase().includes('amazing')
+        ) || real_quotes[0];
+      }
+    } else if (isComplaint && emotional_markers.frustration_points.length > 0) {
+      // Frustration - use complaint-related quotes
+      if (emotional_markers.frustrated_quotes && emotional_markers.frustrated_quotes.length > 0) {
+        selectedQuote = emotional_markers.frustrated_quotes[Math.floor(Math.random() * emotional_markers.frustrated_quotes.length)];
+      } else {
+        selectedQuote = real_quotes.find(q => 
+          q.toLowerCase().includes('problem') || 
+          q.toLowerCase().includes('issue') || 
+          q.toLowerCase().includes('difficult')
+        ) || real_quotes[0];
+      }
+    } else {
+      // Default - use any quote
+      selectedQuote = real_quotes[Math.floor(Math.random() * real_quotes.length)];
+    }
+    
+    response = selectedQuote;
+  } else {
+    // Fallback if no real quotes
+    response = "I'm not sure what to say about that.";
+  }
+  
+  // Add contextual responses based on user message
+  if (isQuestion) {
+    const questionResponses = [
+      "That's a good question...",
+      "Hmm, let me think about that...",
+      "I'm not sure I understand...",
+      "Can you explain that differently?",
+      "What do you mean by that?"
+    ];
+    response = `${questionResponses[Math.floor(Math.random() * questionResponses.length)]} ${response}`;
+  }
+  
+  // Add tech comfort level responses
+  if (isTechRelated) {
+    if (tech_behavior.actual_tech_comfort < 3) {
+      response = `I'm not very good with technology, but ${response.toLowerCase()}`;
+    } else if (tech_behavior.actual_tech_comfort > 7) {
+      response = `From a technical perspective, ${response.toLowerCase()}`;
+    }
+  }
+  
+  // Add emotional context
+  if (isComplaint && emotional_markers.frustration_points.length > 0) {
+    response = `I know what you mean, ${response.toLowerCase()}`;
+  } else if (isPraise && emotional_markers.excitement_triggers.length > 0) {
+    response = `I totally agree! ${response}`;
+  }
+  
+  // Add filler words based on speech patterns
+  if (speech_patterns.filler_words && speech_patterns.filler_words.length > 0) {
+    const fillerChance = speech_patterns.self_corrections_frequency === 'frequent' ? 0.5 : 0.3;
+    if (Math.random() < fillerChance) {
+      const filler = speech_patterns.filler_words[Math.floor(Math.random() * speech_patterns.filler_words.length)];
+      response = `${filler} ${response}`;
+    }
+  }
+  
+  // Add self-corrections if agent does this frequently
+  if (speech_patterns.self_corrections_frequency === 'frequent' && Math.random() < 0.3) {
+    const corrections = ['I mean...', 'Actually...', 'Wait, no...', 'Let me rephrase...'];
+    const correction = corrections[Math.floor(Math.random() * corrections.length)];
+    response = `${correction} ${response}`;
+  }
+  
+  // Add personality-specific speech patterns
+  if (personality_data.communication_blueprint?.response_speed === 'slow') {
+    response = `Well... ${response}`;
+  } else if (personality_data.communication_blueprint?.response_speed === 'immediate') {
+    response = `Right! ${response}`;
+  }
+  
+  // Add hesitation for low tech comfort users
+  if (tech_behavior.actual_tech_comfort < 4 && Math.random() < 0.4) {
+    response = `I'm not sure, but ${response.toLowerCase()}`;
+  }
+  
+  // Ensure response feels natural and not too polished
+  if (response.length > 200) {
+    response = response.substring(0, 200) + '...';
+  }
+  
+  return response;
+}
+
+function calculateResponseDelay(userMessage, agentResponse) {
+  const readingTime = userMessage.split(' ').length * 200;
+  const thinkingTime = 1000 + Math.random() * 2000;
+  const typingTime = agentResponse.length * 50;
+  
+  return Math.round(readingTime + thinkingTime + typingTime);
+}
+
+function detectEmotion(response) {
+  if (response.includes('!') || response.includes('amazing') || response.includes('great')) {
+    return 'excited';
+  } else if (response.includes('?') || response.includes('confused')) {
+    return 'confused';
+  } else if (response.includes('difficult') || response.includes('problem')) {
+    return 'frustrated';
+  } else {
+    return 'neutral';
+  }
+}
+
+// Admin Research Routes for Document Processing and Agent Generation
+let uploadedDocuments = [];
+
+// Upload documents endpoint
+app.post('/api/admin-research/upload', upload.array('files', 10), (req, res) => {
+  try {
+    const files = req.files;
+    
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded' });
+    }
+
+    const uploadedFiles = files.map(file => ({
+      id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      originalName: file.originalname,
+      filename: file.filename,
+      path: file.path,
+      size: file.size,
+      mimetype: file.mimetype,
+      uploadedAt: new Date().toISOString(),
+      status: 'uploaded'
+    }));
+
+    // Add to stored documents
+    uploadedDocuments.push(...uploadedFiles);
+
+    res.json({
+      success: true,
+      message: `${files.length} file(s) uploaded successfully`,
+      files: uploadedFiles,
+      fileIds: uploadedFiles.map(f => f.id)
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ 
+      error: error.message || 'Upload failed',
+      success: false 
+    });
+  }
+});
+
+// Process documents endpoint
+app.post('/api/admin-research/process-documents', (req, res) => {
+  try {
     const { fileIds, action, configuration } = req.body;
     
-    if (action === 'generate_agents') {
-      // Read uploaded files and process with AI
-      const documents = [];
-      
-      if (fileIds && fileIds.length > 0) {
-        // Read files from uploads directory
-        const uploadDir = './uploads';
-        const files = fs.readdirSync(uploadDir);
-        
-        for (const fileId of fileIds) {
-          const file = files.find(f => f.includes(fileId.toString()));
-          if (file) {
-            const filePath = path.join(uploadDir, file);
-            const fileContent = fs.readFileSync(filePath, 'utf8');
-            
-            documents.push({
-              filename: file,
-              content: fileContent,
-              type: path.extname(file).substring(1),
-              path: filePath,
-              size: fs.statSync(filePath).size,
-              mimetype: 'text/plain' // Simplified for now
-            });
-          }
-        }
-      }
-      
-      // Generate AI agents using advanced persona generator
-      console.log('🚀 Using Advanced AI Persona Generator for Indian Context...');
-      const startTime = Date.now();
-      const result = await personaGenerator.generateIndianPersonas(documents, configuration || {});
-      const agents = result.personas || result;
-      
-      // Track analytics
-      analyticsService.trackPersonaGeneration(agents, 'document_upload');
-      
-      // Store in Redis for session management
-      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      await redisService.setPersonaSession(sessionId, agents);
-      
-      // Generate vector embeddings for similarity search
-      agents.forEach(agent => {
-        const embedding = vectorSearchService.generatePersonaEmbedding(agent);
-        vectorSearchService.storePersonaVector(agent.id, embedding);
+    if (!fileIds || fileIds.length === 0) {
+      return res.status(400).json({ 
+        error: 'No file IDs provided',
+        success: false 
       });
-      
-      // Analyze diversity
-      const diversityAnalysis = vectorSearchService.analyzePersonaDiversity(agents);
-      
-      res.json({
-        success: true,
-        message: 'Documents processed successfully with advanced AI',
-        agents: agents,
-        documentCount: documents.length,
-        processingTime: Date.now() - startTime,
-        sessionId: sessionId,
-        analytics: {
-          diversity: diversityAnalysis,
-          qualityScore: analyticsService.getAverageQualityScore(),
-          regionalDistribution: analyticsService.getCurrentMetrics().topRegions
-        }
-      });
-    } else {
-      // Fallback to mock data
-      const mockAgents = [
-        {
-          id: 'agent-1',
-          name: 'Tech-Savvy Professional',
-          persona: 'A working professional who values efficiency and modern interfaces',
-          demographics: {
-            ageRange: [25, 35],
-            income: '₹5L-₹10L',
-            location: 'Urban India',
-            occupation: 'Software Engineer'
-          },
-          behaviors: [
-            'Prefers mobile-first interfaces',
-            'Values security over convenience',
-            'Quick decision maker'
-          ],
-          preferences: [
-            'Clean, minimal design',
-            'Fast loading times',
-            'Intuitive navigation'
-          ],
-          painPoints: [
-            'Complex registration processes',
-            'Slow response times',
-            'Unclear error messages'
-          ],
-          goals: [
-            'Complete tasks quickly',
-            'Feel secure using the platform',
-            'Have a smooth user experience'
-          ],
-          communicationStyle: 'Direct and concise',
-          techSavviness: 'High',
-          confidence: 0.85,
-          status: 'ACTIVE'
-        }
-      ];
+    }
 
+    // Get documents by IDs
+    const documentsToProcess = uploadedDocuments.filter(doc => fileIds.includes(doc.id));
+    
+    if (documentsToProcess.length === 0) {
+      return res.status(404).json({ 
+        error: 'No documents found with provided IDs',
+        success: false 
+      });
+    }
+
+    // Read document contents
+    const documentContents = [];
+    for (const doc of documentsToProcess) {
+      try {
+        let content = '';
+        if (doc.mimetype === 'text/plain' || doc.mimetype === 'application/json') {
+          content = fs.readFileSync(doc.path, 'utf8');
+        } else if (doc.mimetype === 'text/csv') {
+          content = fs.readFileSync(doc.path, 'utf8');
+        } else {
+          content = `[Binary file: ${doc.originalName}]`;
+        }
+        
+        documentContents.push({
+          filename: doc.originalName,
+          content: content,
+          type: doc.mimetype
+        });
+      } catch (readError) {
+        console.error(`Error reading file ${doc.originalName}:`, readError);
+        documentContents.push({
+          filename: doc.originalName,
+          content: `[Error reading file: ${readError}]`,
+          type: doc.mimetype
+        });
+      }
+    }
+
+    if (action === 'generate_agents') {
+      // Generate AI agents based on documents
+      const agents = generateAgentsFromDocuments(documentContents, configuration);
+      
       res.json({
         success: true,
         message: 'Documents processed successfully',
-        agents: mockAgents,
+        agents: agents,
+        processedDocuments: documentsToProcess.length,
         insights: {
-          themes: ['User Experience', 'Security', 'Efficiency'],
-          keyFindings: ['Users prefer simple interfaces', 'Security is a top concern'],
-          recommendations: ['Implement two-factor authentication', 'Simplify onboarding process']
+          totalDocuments: documentsToProcess.length,
+          totalAgents: agents.length,
+          agentTypes: [...new Set(agents.map(a => a.demographics?.occupation || 'Unknown'))],
+          demographics: {
+            ageRange: [Math.min(...agents.map(a => a.demographics?.age || 25)), Math.max(...agents.map(a => a.demographics?.age || 45))],
+            locations: [...new Set(agents.map(a => a.demographics?.location || 'Unknown'))],
+            occupations: [...new Set(agents.map(a => a.demographics?.occupation || 'Unknown'))]
+          }
         }
+      });
+    } else {
+      // Default processing
+      res.json({
+        success: true,
+        message: 'Documents processed successfully',
+        processedDocuments: documentsToProcess.length,
+        contents: documentContents
       });
     }
   } catch (error) {
     console.error('Process documents error:', error);
     res.status(500).json({ 
-      success: false, 
-      error: 'Processing failed: ' + error.message,
-      message: 'Document processing failed. Please try again.'
+      error: error.message || 'Failed to process documents',
+      success: false 
     });
   }
 });
 
-// Agent Management Endpoints
-app.delete('/api/admin-research/agents/:agentId', (req, res) => {
-  try {
-    const { agentId } = req.params;
-    console.log('Deleting agent:', agentId);
-    
-    // In a real implementation, this would delete from database
-    // For now, we'll just return success
-    res.json({ 
-      success: true, 
-      message: `Agent ${agentId} deleted successfully`,
-      deletedAgentId: agentId
-    });
-  } catch (error) {
-    console.error('Error deleting agent:', error);
-    res.status(500).json({ error: 'Failed to delete agent: ' + error.message });
-  }
-});
+// Generate agents from documents
+function generateAgentsFromDocuments(documents, configuration = {}) {
+  const agents = [];
+  const config = {
+    personaCount: configuration.personaCount || 5,
+    ageRange: configuration.ageRange || [25, 45],
+    incomeRange: configuration.incomeRange || ['₹3L-₹6L', '₹6L-₹12L', '₹12L-₹20L'],
+    locations: configuration.locations || ['Bangalore', 'Mumbai', 'Delhi', 'Pune'],
+    techLevels: configuration.techLevels || ['Low', 'Medium', 'High'],
+    occupations: configuration.occupations || ['Software Engineer', 'Business Owner', 'Manager', 'Analyst'],
+    ...configuration
+  };
 
-app.put('/api/admin-research/agents/:agentId/status', (req, res) => {
-  try {
-    const { agentId } = req.params;
-    const { status } = req.body;
-    console.log('Updating agent status:', agentId, status);
-    
-    // In a real implementation, this would update database
-    // For now, we'll just return success
-    res.json({ 
-      success: true, 
-      message: `Agent ${agentId} status updated to ${status}`,
-      agentId,
-      status
-    });
-  } catch (error) {
-    console.error('Error updating agent status:', error);
-    res.status(500).json({ error: 'Failed to update agent status: ' + error.message });
-  }
-});
+  // Extract insights from documents
+  const documentText = documents.map(d => d.content).join(' ');
+  const insights = extractInsightsFromText(documentText);
 
-// AI Agent Generation Function
-async function generateAgentsFromDocuments(documents, configuration = {}) {
-  try {
-    console.log('Generating AI agents from documents and configuration:', documents.length, 'docs');
-    console.log('Configuration:', configuration);
-    
-    // Send documents and configuration to AI for analysis
-    const aiAnalysis = await analyzeDocumentsWithAI(documents, configuration);
-    console.log('AI Analysis completed:', aiAnalysis);
-    
-    // Extract real user details from AI analysis
-    const realUsers = aiAnalysis.users || await extractRealUsersFromDocuments(documents);
-    console.log('Extracted real users:', realUsers.length);
-    
-    // Create agents based on AI-analyzed real users
-    const agents = realUsers.map((user, index) => ({
-      id: `real-user-agent-${index + 1}`,
-      name: user.name || `User ${index + 1}`,
-      persona: `AI agent mimicking ${user.name || `User ${index + 1}`} - a real person from research data`,
+  // Generate agents based on document insights and configuration
+  for (let i = 0; i < config.personaCount; i++) {
+    const agent = {
+      id: `agent_${Date.now()}_${i}`,
+      name: generateIndianName(),
       demographics: {
-        age: user.age || 25 + (index * 5),
-        ageRange: user.ageRange || [user.age - 5, user.age + 5],
-        income: user.income || '₹3L-₹6L',
-        income_range: user.income || '₹3L-₹6L',
-        location: user.location || 'India',
-        occupation: user.occupation || 'Professional',
-        education: user.education || 'Graduate',
-        family_status: user.familyStatus || 'Single',
-        tech_savviness: user.techSavviness || 'Medium',
-        english_literacy: user.englishLiteracy || 'Good'
+        age: Math.floor(Math.random() * (config.ageRange[1] - config.ageRange[0] + 1)) + config.ageRange[0],
+        location: config.locations[Math.floor(Math.random() * config.locations.length)],
+        occupation: config.occupations[Math.floor(Math.random() * config.occupations.length)],
+        income: config.incomeRange[Math.floor(Math.random() * config.incomeRange.length)],
+        familyStatus: Math.random() > 0.5 ? 'Married' : 'Single',
+        techSavviness: config.techLevels[Math.floor(Math.random() * config.techLevels.length)],
+        englishLiteracy: Math.random() > 0.3 ? 'Fluent' : 'Conversational'
       },
-      behaviors: user.behaviors || [
-        'Researches before making decisions',
-        'Prefers step-by-step guidance',
-        'Values user reviews and ratings'
-      ],
-      preferences: user.preferences || [
-        'Clean, simple interfaces',
-        'Mobile-first design',
-        'Fast loading times'
-      ],
-      pain_points: user.painPoints || [
-        'Confusing navigation',
-        'Slow loading times',
-        'Poor mobile experience'
-      ],
-      goals: user.goals || [
-        'Complete tasks efficiently',
-        'Save time and effort',
-        'Make informed decisions'
-      ],
-      communication_style: user.communicationStyle || 'Friendly and conversational',
-      quote: user.quote || `"I need something that works for my specific situation as a ${user.occupation || 'professional'}."`,
-      confidence: user.confidence || 0.85,
-      status: 'ACTIVE',
-      source: 'Real User from Research Data',
-      real_user_id: user.id,
-      background: {
-        education: user.education || 'Graduate degree',
-        work_experience: user.workExperience || `${user.age - 22}+ years in ${user.occupation || 'professional field'}`,
-        family: user.family || 'Single, living independently',
-        lifestyle: user.lifestyle || 'Balanced work-life approach'
+      personality: {
+        traits: generatePersonalityTraits(),
+        communicationStyle: generateCommunicationStyle(),
+        emotionalTone: generateEmotionalTone(),
+        responseLength: ['brief', 'moderate', 'detailed'][Math.floor(Math.random() * 3)],
+        riskTolerance: ['low', 'medium', 'high'][Math.floor(Math.random() * 3)],
+        decisionMaking: ['analytical', 'intuitive', 'collaborative'][Math.floor(Math.random() * 3)]
       },
-      experience: {
-        level: user.experienceLevel || 'Intermediate',
-        context: user.context || 'Professional',
-        device_preference: user.devicePreference || 'Mobile',
-        frequency: user.frequency || 'Daily'
+      preferences: {
+        topics: generateTopicsFromInsights(insights),
+        communicationChannels: ['mobile', 'desktop', 'app'][Math.floor(Math.random() * 3)],
+        responseTime: ['immediate', 'within_hour', 'within_day'][Math.floor(Math.random() * 3)],
+        formality: ['casual', 'professional', 'formal'][Math.floor(Math.random() * 3)]
       },
-      concerns: user.concerns || [
-        'Data privacy and security',
-        'Complex user interfaces',
-        'Technical difficulties'
-      ],
-      created_at: new Date().toISOString()
-    }));
+      researchContext: {
+        source: 'document_upload',
+        insights: insights,
+        confidence: 0.8 + Math.random() * 0.2
+      },
+      lastUpdated: new Date().toISOString()
+    };
     
-    console.log('Generated AI agents from real users:', agents.length);
-    return agents;
-    
-  } catch (error) {
-    console.error('Error generating AI agents from real users:', error);
-    // Return fallback agents based on document content
-    return [
-      {
-        id: 'fallback-agent-1',
-        name: 'Research Participant 1',
-        persona: 'AI agent based on research participant from uploaded documents',
-        demographics: {
-          age: 28,
-          ageRange: [25, 32],
-          income: '₹4L-₹8L',
-          income_range: '₹4L-₹8L',
-          location: 'Bangalore',
-          occupation: 'Software Engineer',
-          education: 'Engineering',
-          family_status: 'Single',
-          tech_savviness: 'High',
-          english_literacy: 'Fluent'
-        },
-        behaviors: ['Values efficiency', 'Prefers mobile apps', 'Data-driven decisions'],
-        preferences: ['Clean UI', 'Fast loading', 'Intuitive navigation'],
-        pain_points: ['Complex workflows', 'Slow responses', 'Poor mobile experience'],
-        goals: ['Increase productivity', 'Save time', 'Better work-life balance'],
-        communication_style: 'Direct and concise',
-        quote: '"I need tools that help me work faster and more efficiently."',
-        confidence: 0.90,
-        status: 'ACTIVE',
-        source: 'Research Data Analysis',
-        background: {
-          education: 'Bachelor of Technology in Computer Science',
-          work_experience: '5+ years in software development',
-          family: 'Single, living with roommates',
-          lifestyle: 'Workaholic who enjoys coding and tech'
-        },
-        experience: {
-          level: 'Expert',
-          context: 'Professional',
-          device_preference: 'Mobile',
-          frequency: 'Daily'
-        },
-        concerns: ['Data privacy', 'System reliability', 'Learning curve'],
-        created_at: new Date().toISOString()
-      }
-    ];
+    agents.push(agent);
   }
+
+  return agents;
 }
 
-// AI Analysis Function - Send documents and configuration to AI
-async function analyzeDocumentsWithAI(documents, configuration) {
-  try {
-    console.log('Sending documents and configuration to AI for analysis...');
-    
-    // Prepare document content for AI analysis
-    const documentContents = [];
-    for (const doc of documents) {
-      try {
-        const content = await fs.promises.readFile(doc.path, 'utf8');
-        documentContents.push({
-          filename: doc.filename,
-          content: content.substring(0, 10000), // Limit content size
-          size: doc.size,
-          type: doc.mimetype
-        });
-      } catch (error) {
-        console.error('Error reading document:', doc.filename, error);
-      }
+// Helper functions for agent generation
+function generateIndianName() {
+  const firstNames = ['Priya', 'Rajesh', 'Anita', 'Vikram', 'Deepika', 'Arjun', 'Sneha', 'Karthik', 'Pooja', 'Rohit', 'Shreya', 'Amit', 'Kavya', 'Suresh', 'Meera'];
+  const lastNames = ['Sharma', 'Kumar', 'Patel', 'Singh', 'Mehta', 'Gupta', 'Reddy', 'Nair', 'Agarwal', 'Joshi', 'Iyer', 'Malhotra', 'Chopra', 'Bansal', 'Arora'];
+  return `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
+}
+
+function generatePersonalityTraits() {
+  const traits = ['analytical', 'creative', 'practical', 'empathetic', 'ambitious', 'cautious', 'optimistic', 'realistic', 'collaborative', 'independent'];
+  return traits.sort(() => 0.5 - Math.random()).slice(0, 3);
+}
+
+function generateCommunicationStyle() {
+  const styles = ['direct', 'diplomatic', 'conversational', 'formal', 'casual'];
+  return styles[Math.floor(Math.random() * styles.length)];
+}
+
+function generateEmotionalTone() {
+  const tones = ['positive', 'neutral', 'reserved', 'enthusiastic', 'thoughtful'];
+  return tones[Math.floor(Math.random() * tones.length)];
+}
+
+function generateTopicsFromInsights(insights) {
+  const baseTopics = ['technology', 'finance', 'user experience', 'productivity', 'innovation'];
+  const insightTopics = insights.keywords || [];
+  return [...baseTopics, ...insightTopics].slice(0, 5);
+}
+
+function extractInsightsFromText(text) {
+  // Simple keyword extraction
+  const words = text.toLowerCase().split(/\s+/);
+  const wordCount = {};
+  words.forEach(word => {
+    if (word.length > 4) {
+      wordCount[word] = (wordCount[word] || 0) + 1;
     }
-    
-    // Create AI prompt for document analysis
-    const aiPrompt = createAIAnalysisPrompt(documentContents, configuration);
-    
-    // In a real implementation, this would call Grok API or similar
-    // For now, we'll simulate AI analysis with enhanced logic
-    const aiAnalysis = await simulateAIAnalysis(documentContents, configuration, aiPrompt);
-    
-    return aiAnalysis;
-  } catch (error) {
-    console.error('Error in AI analysis:', error);
-    // Fallback to basic analysis
-    return { users: await extractRealUsersFromDocuments(documents) };
-  }
-}
-
-// Create AI prompt for document analysis
-function createAIAnalysisPrompt(documents, configuration) {
-  return `
-Analyze the following research documents and configuration to extract real user personas:
-
-DOCUMENTS:
-${documents.map(doc => `
-File: ${doc.filename}
-Content: ${doc.content}
-`).join('\n')}
-
-CONFIGURATION:
-${JSON.stringify(configuration, null, 2)}
-
-Please extract:
-1. Real user personas with detailed demographics
-2. User behaviors, preferences, and pain points
-3. Technology usage patterns
-4. Communication styles
-5. Goals and motivations
-6. Authentic quotes from users
-
-Focus on creating diverse, realistic personas that represent actual users from the research data.
-Each persona should be based on specific individuals mentioned in the documents.
-`;
-}
-
-// Simulate AI analysis (in real implementation, this would call Grok API)
-async function simulateAIAnalysis(documents, configuration, prompt) {
-  console.log('Simulating AI analysis with prompt length:', prompt.length);
-  
-  // Simulate AI processing delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  // Extract users from documents using enhanced pattern matching
-  const extractedUsers = await extractRealUsersFromDocuments(documents);
-  
-  // Enhance users based on configuration
-  const enhancedUsers = extractedUsers.map((user, index) => {
-    // Apply configuration-based enhancements
-    const configEnhancements = applyConfigurationEnhancements(user, configuration, index);
-    return { ...user, ...configEnhancements };
   });
   
-  // If no users found in documents, use realistic sample users
-  if (enhancedUsers.length === 0) {
-    return { users: createSampleUsersFromContent(documents) };
-  }
+  const keywords = Object.entries(wordCount)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 10)
+    .map(([word]) => word);
   
-  return { users: enhancedUsers };
-}
-
-// Apply configuration-based enhancements to users
-function applyConfigurationEnhancements(user, configuration, index) {
-  const enhancements = {};
-  
-  // Apply age range from configuration
-  if (configuration.ageRange) {
-    const [minAge, maxAge] = configuration.ageRange;
-    enhancements.age = minAge + (index * Math.floor((maxAge - minAge) / 5));
-  }
-  
-  // Apply income range from configuration
-  if (configuration.incomeRange) {
-    const incomeRanges = ['₹3L-₹6L', '₹6L-₹12L', '₹12L-₹20L', '₹20L-₹35L', '₹35L+'];
-    enhancements.income = incomeRanges[index % incomeRanges.length];
-  }
-  
-  // Apply location preferences from configuration
-  if (configuration.locations && configuration.locations.length > 0) {
-    enhancements.location = configuration.locations[index % configuration.locations.length];
-  }
-  
-  // Apply tech savviness from configuration
-  if (configuration.techLevels && configuration.techLevels.length > 0) {
-    enhancements.techSavviness = configuration.techLevels[index % configuration.techLevels.length];
-  }
-  
-  // Apply occupation preferences from configuration
-  if (configuration.occupations && configuration.occupations.length > 0) {
-    enhancements.occupation = configuration.occupations[index % configuration.occupations.length];
-  }
-  
-  return enhancements;
-}
-
-// Function to extract real users from uploaded documents
-async function extractRealUsersFromDocuments(documents) {
-  const realUsers = [];
-  
-  try {
-    for (const doc of documents) {
-      console.log('Processing document:', doc.filename);
-      
-      // Read document content
-      const content = await fs.promises.readFile(doc.path, 'utf8');
-      
-      // Extract user information using pattern matching
-      const users = extractUsersFromContent(content, doc.filename);
-      realUsers.push(...users);
-    }
-    
-    // If no users found, create sample users based on document content
-    if (realUsers.length === 0) {
-      console.log('No specific users found, creating sample users from document content');
-      return createSampleUsersFromContent(documents);
-    }
-    
-    return realUsers;
-  } catch (error) {
-    console.error('Error extracting users from documents:', error);
-    return createSampleUsersFromContent(documents);
-  }
-}
-
-// Extract users from document content using enhanced pattern matching
-function extractUsersFromContent(content, filename) {
-  const users = [];
-  
-  // Enhanced patterns for user information in research documents
-  const patterns = {
-    // Interview transcripts with various formats
-    interview: [
-      /(?:Participant|User|Interviewee|P\d+)\s*:?\s*([A-Za-z\s]+)(?:\n|$)/gi,
-      /(?:Name|User)\s*:?\s*([A-Za-z\s]+)(?:\n|$)/gi,
-      /(?:I'm|I am)\s+([A-Za-z\s]+)(?:\s|,|\.)/gi,
-      /(?:My name is|I'm called)\s+([A-Za-z\s]+)(?:\s|,|\.)/gi
-    ],
-    // Survey responses
-    survey: [
-      /(?:Respondent|User|R\d+)\s*(\d+):\s*([A-Za-z\s]+)/gi,
-      /(?:Q\d+.*?Answer:?\s*)([A-Za-z\s]+)/gi
-    ],
-    // User profiles and personas
-    profile: [
-      /(?:Persona|Profile|User)\s*:?\s*([A-Za-z\s]+)/gi,
-      /(?:Demographics|User Details).*?Name:?\s*([A-Za-z\s]+)/gi
-    ],
-    // Indian names specifically
-    indianNames: [
-      /(?:Amit|Rahul|Vikram|Sanjay|Priya|Rajesh|Kumar|Sharma|Patel|Gupta|Singh|Mehta)\s+([A-Za-z\s]+)/gi,
-      /([A-Za-z]+)\s+(?:Sharma|Patel|Gupta|Singh|Mehta|Kumar|Reddy|Agarwal|Jain|Verma)/gi
-    ]
+  return {
+    keywords,
+    themes: ['user experience', 'technology adoption', 'financial services'],
+    patterns: ['mobile-first', 'security-conscious', 'value-oriented']
   };
-  
-  // Extract names using multiple patterns
-  let nameMatches = [];
-  
-  // Try all interview patterns
-  patterns.interview.forEach(pattern => {
-    const matches = content.match(pattern);
-    if (matches) nameMatches.push(...matches);
-  });
-  
-  // Try survey patterns
-  patterns.survey.forEach(pattern => {
-    const matches = content.match(pattern);
-    if (matches) nameMatches.push(...matches);
-  });
-  
-  // Try profile patterns
-  patterns.profile.forEach(pattern => {
-    const matches = content.match(pattern);
-    if (matches) nameMatches.push(...matches);
-  });
-  
-  // Try Indian name patterns
-  patterns.indianNames.forEach(pattern => {
-    const matches = content.match(pattern);
-    if (matches) nameMatches.push(...matches);
-  });
-  
-  // Process found names
-  if (nameMatches.length > 0) {
-    const uniqueNames = [...new Set(nameMatches.map(match => {
-      // Clean up the match to extract just the name
-      return match.replace(/(?:Participant|User|Interviewee|Respondent|Name|I'm|I am|My name is|I'm called|Persona|Profile|Q\d+.*?Answer:?)\s*/gi, '').trim();
-    }))];
-    
-    uniqueNames.forEach((name, index) => {
-      if (name && name.length > 2 && name.length < 50) {
-        // Extract context around this name for better analysis
-        const nameContext = extractNameContext(content, name);
-        
-        users.push({
-          id: `user-${filename}-${index + 1}`,
-          name: name,
-          source: filename,
-          // Extract other details with context
-          age: extractAge(content, nameContext),
-          occupation: extractOccupation(content, nameContext),
-          location: extractLocation(content, nameContext),
-          income: extractIncome(content, nameContext),
-          techSavviness: extractTechSavviness(content, nameContext),
-          communicationStyle: extractCommunicationStyle(content, nameContext),
-          behaviors: extractBehaviors(content, nameContext),
-          preferences: extractPreferences(content, nameContext),
-          painPoints: extractPainPoints(content, nameContext),
-          goals: extractGoals(content, nameContext),
-          quote: extractQuote(content, name, nameContext)
-        });
-      }
-    });
-  }
-  
-  return users;
 }
-
-// Extract context around a specific name for better analysis
-function extractNameContext(content, name) {
-  const nameIndex = content.toLowerCase().indexOf(name.toLowerCase());
-  if (nameIndex === -1) return content;
-  
-  const start = Math.max(0, nameIndex - 500);
-  const end = Math.min(content.length, nameIndex + 500);
-  return content.substring(start, end);
-}
-
-// Helper functions to extract specific user attributes
-function extractAge(content, nameContext = null) {
-  const searchContent = nameContext || content;
-  const ageMatch = searchContent.match(/(?:Age|age):\s*(\d+)/i);
-  return ageMatch ? parseInt(ageMatch[1]) : 25 + Math.floor(Math.random() * 20);
-}
-
-function extractOccupation(content, nameContext = null) {
-  const searchContent = nameContext || content;
-  const occupationMatch = searchContent.match(/(?:Occupation|Job|Role|Works as):\s*([A-Za-z\s]+)/i);
-  return occupationMatch ? occupationMatch[1].trim() : 'Professional';
-}
-
-function extractLocation(content, nameContext = null) {
-  const searchContent = nameContext || content;
-  const locationMatch = searchContent.match(/(?:Location|City|From|Lives in):\s*([A-Za-z\s]+)/i);
-  return locationMatch ? locationMatch[1].trim() : 'India';
-}
-
-function extractIncome(content, nameContext = null) {
-  const searchContent = nameContext || content;
-  const incomeMatch = searchContent.match(/(?:Income|Salary):\s*([₹\d\-\+L]+)/i);
-  return incomeMatch ? incomeMatch[1].trim() : '₹3L-₹6L';
-}
-
-function extractTechSavviness(content, nameContext = null) {
-  const searchContent = nameContext || content;
-  const techKeywords = {
-    high: ['expert', 'advanced', 'technical', 'developer', 'engineer', 'programmer'],
-    medium: ['familiar', 'comfortable', 'basic', 'intermediate'],
-    low: ['beginner', 'new', 'learning', 'struggling', 'confused']
-  };
-  
-  const lowerContent = searchContent.toLowerCase();
-  for (const [level, keywords] of Object.entries(techKeywords)) {
-    if (keywords.some(keyword => lowerContent.includes(keyword))) {
-      return level === 'high' ? 'High' : level === 'medium' ? 'Medium' : 'Low';
-    }
-  }
-  return 'Medium';
-}
-
-function extractCommunicationStyle(content, nameContext = null) {
-  const searchContent = nameContext || content;
-  const styleKeywords = {
-    'Direct and to the point': ['direct', 'straightforward', 'concise'],
-    'Detailed and explanatory': ['detailed', 'thorough', 'comprehensive'],
-    'Friendly and conversational': ['friendly', 'casual', 'conversational'],
-    'Professional and formal': ['professional', 'formal', 'business']
-  };
-  
-  const lowerContent = searchContent.toLowerCase();
-  for (const [style, keywords] of Object.entries(styleKeywords)) {
-    if (keywords.some(keyword => lowerContent.includes(keyword))) {
-      return style;
-    }
-  }
-  return 'Friendly and conversational';
-}
-
-function extractBehaviors(content, nameContext = null) {
-  const searchContent = nameContext || content;
-  const behaviorKeywords = [
-    'researches before deciding',
-    'prefers step-by-step guidance',
-    'values user reviews',
-    'seeks help when stuck',
-    'compares multiple options',
-    'reads instructions carefully'
-  ];
-  
-  const lowerContent = searchContent.toLowerCase();
-  return behaviorKeywords.filter(behavior => lowerContent.includes(behavior));
-}
-
-function extractPreferences(content, nameContext = null) {
-  const searchContent = nameContext || content;
-  const preferenceKeywords = [
-    'clean interfaces',
-    'mobile-first design',
-    'fast loading',
-    'clear navigation',
-    'helpful error messages',
-    'customizable options'
-  ];
-  
-  const lowerContent = searchContent.toLowerCase();
-  return preferenceKeywords.filter(pref => lowerContent.includes(pref));
-}
-
-function extractPainPoints(content, nameContext = null) {
-  const searchContent = nameContext || content;
-  const painKeywords = [
-    'confusing navigation',
-    'slow loading',
-    'poor mobile experience',
-    'unclear error messages',
-    'too many steps',
-    'lack of support'
-  ];
-  
-  const lowerContent = searchContent.toLowerCase();
-  return painKeywords.filter(pain => lowerContent.includes(pain));
-}
-
-function extractGoals(content, nameContext = null) {
-  const searchContent = nameContext || content;
-  const goalKeywords = [
-    'complete tasks efficiently',
-    'save time',
-    'make informed decisions',
-    'stay connected',
-    'advance career',
-    'learn new skills'
-  ];
-  
-  const lowerContent = searchContent.toLowerCase();
-  return goalKeywords.filter(goal => lowerContent.includes(goal));
-}
-
-function extractQuote(content, name, nameContext = null) {
-  const searchContent = nameContext || content;
-  // Look for quotes or statements by the user
-  const quotePattern = new RegExp(`"([^"]*)"`, 'g');
-  const quotes = searchContent.match(quotePattern);
-  return quotes ? quotes[0] : `"I need something that works for my specific situation as a ${extractOccupation(searchContent)}."`;
-}
-
-// Create realistic sample users based on Indian demographics and fintech usage patterns
-function createSampleUsersFromContent(documents) {
-  // Enhanced sample users based on Elizabeth Soto format
-  const sampleUsers = [
-    {
-      id: 'sample-user-1',
-      name: 'Elizabeth Soto',
-      photoDescription: 'A professional headshot of a healthcare professional with dark skin and short curly hair, smiling warmly, wearing a white collared shirt',
-      source: documents[0]?.filename || 'research-document',
-      age: 41,
-      gender: 'Female',
-      occupation: 'Director of Critical Care',
-      education: "Master's Degree in Nursing",
-      location: 'United States',
-      income: '120,000 USD annually',
-      maritalStatus: 'Married',
-      creditScore: 750,
-      category: 'Healthcare Professional',
-      bio: 'Elizabeth is a Director of Critical Care with 14 years of experience in healthcare. She manages Adult Critical Care Units and is passionate about maintaining quality while cutting costs. She prides herself on being responsive to her team and maintaining work-life balance.',
-      techSavviness: 'Medium',
-      communicationStyle: 'Professional and thorough',
-      behaviors: [
-        'Attends and conducts face-to-face meetings with staff daily',
-        'Conducts office hours in the Adult Critical Care Unit',
-        'Prepares daily reports for management',
-        'Resolves problems during the work day'
-      ],
-      preferences: [
-        'Clear documentation and step-by-step processes',
-        'Dedicated Customer Success Manager support',
-        'Quick integration into daily activities',
-        'Additional content for free work use'
-      ],
-      painPoints: [
-        'Finding balance between cutting costs and maintaining quality',
-        'Slow adoption of best practices',
-        'Having to stay after work from time to time'
-      ],
-      goals: [
-        'Having enough money to pay for her daughter\'s education',
-        'Maintaining work-life balance',
-        'Being responsive to all incoming emails and calls',
-        'Professional growth and recognition as a "fan"'
-      ],
-      technologyUse: 'Uses hospital systems, email, LinkedIn, educational platforms, and Facebook for professional networking and learning',
-      quote: 'I want to be a high performer and a go-to leader for my team.',
-      // Additional unique details
-      personality: 'Professional, goal-oriented, values work-life balance and team responsiveness',
-      lifestyle: 'Healthcare professional, works long hours, focuses on family and professional growth',
-      financialBehavior: 'Conservative with finances, prioritizes family education and security',
-      decisionMaking: 'Evidence-based, considers team impact, values professional validation',
-      uniqueTraits: [
-        'Values professional recognition and growth',
-        'Maintains detailed documentation',
-        'Prioritizes team responsiveness',
-        'Balances cost-cutting with quality maintenance'
-      ],
-      specificNeeds: [
-        'Clear documentation and step-by-step processes',
-        'Dedicated Customer Success Manager support',
-        'Quick integration into daily activities',
-        'Additional content for professional development'
-      ]
-    },
-    {
-      id: 'sample-user-2',
-      name: 'Vikram Patel',
-      photoDescription: 'A middle-aged man in a shop setting, looking thoughtful',
-      source: documents[0]?.filename || 'research-document',
-      age: 35,
-      gender: 'Male',
-      occupation: 'Small Business Owner (Retail)',
-      education: 'High School Diploma',
-      location: 'Nashik, India',
-      income: '₹25,000 per month',
-      maritalStatus: 'Married',
-      creditScore: 680,
-      category: 'CAT C (Moderate tech-savviness, lower financial exposure)',
-      bio: 'Vikram runs a small retail shop in Nashik, selling household goods. He\'s been in business for 10 years and is dedicated to providing for his family. He enjoys spending time with his children and watching local cricket matches.',
-      techSavviness: 'Low',
-      communicationStyle: 'Detailed and explanatory',
-      behaviors: [
-        'Uses basic financial apps like Google Pay for transactions',
-        'Takes longer to complete tasks if instructions are not clear',
-        'Prefers in-person banking but uses apps for urgency'
-      ],
-      preferences: [
-        'Regional language support',
-        'Simple, clear instructions',
-        'Trust indicators and security features'
-      ],
-      painPoints: [
-        'Struggles with English terminology in apps',
-        'Confused by unclear reward validity or complex flows',
-        'Hesitant to share personal details online due to trust issues'
-      ],
-      goals: [
-        'Access quick loans for business inventory or personal needs',
-        'Understand app features despite limited English proficiency',
-        'Build trust in digital financial services'
-      ],
-      technologyUse: 'Primarily uses a smartphone; Relies on regional language support; Less familiar with reward systems',
-      quote: 'मुझे एक सरल लोन प्रक्रिया चाहिए जो मेरी भाषा में हो। EMI क्या है, यह मुझे समझ नहीं आता। मुझे बस पैसा चाहिए दुकान के लिए।',
-      // Additional unique details
-      personality: 'Cautious, family-oriented, values trust and relationships over technology',
-      lifestyle: 'Small business owner, works 12+ hours daily, family man with 2 children',
-      financialBehavior: 'Conservative with money, prefers cash transactions, uses digital only when necessary',
-      decisionMaking: 'Consults family and trusted friends, takes time to understand before committing',
-      uniqueTraits: [
-        'Prefers Hindi/Marathi interfaces',
-        'Keeps physical receipts and records',
-        'Values personal relationships with bank staff',
-        'Uses voice messages instead of typing'
-      ],
-      specificNeeds: [
-        'Gujarati language support',
-        'Video call assistance for complex processes',
-        'Simple step-by-step visual guides',
-        'Trust badges and security certifications'
-      ]
-    },
-    {
-      id: 'sample-user-3',
-      name: 'Rahul Mehta',
-      photoDescription: 'A young man in casual clothes, looking slightly unsure but hopeful',
-      source: documents[0]?.filename || 'research-document',
-      age: 25,
-      gender: 'Male',
-      occupation: 'Junior Analyst at a startup',
-      education: "Bachelor's in Business Administration",
-      location: 'Mumbai, India',
-      income: '₹30,000 per month',
-      maritalStatus: 'Single',
-      creditScore: 650,
-      category: 'Starter (New to loans, low to moderate tech-savviness)',
-      bio: 'Rahul recently graduated and started working at a fintech startup in Mumbai. He\'s eager to learn and grow in his career. In his free time, he enjoys watching movies and exploring the city.',
-      techSavviness: 'Medium',
-      communicationStyle: 'Friendly and conversational',
-      behaviors: [
-        'Uses apps like Google Pay for basic transactions',
-        'Takes time to explore app features',
-        'Seeks information from friends or online forums'
-      ],
-      preferences: [
-        'Apps with clear instructions and support',
-        'Educational content and guidance',
-        'Simple, step-by-step processes'
-      ],
-      painPoints: [
-        'Lacks confidence due to unfamiliarity with loan processes',
-        'Confused by terms like "pre-EMI" or "instant disbursal"',
-        'Anxious about making mistakes in applications'
-      ],
-      goals: [
-        'Explore loan options for personal expenses (e.g., buying a laptop)',
-        'Build confidence in using online loan apps',
-        'Understand loan terms and processes clearly'
-      ],
-      technologyUse: 'Uses a smartphone and occasionally a laptop; Prefers apps with clear instructions and support',
-      quote: 'I\'m new to loans and need clear guidance to make the right choices. What exactly is EMI? I\'ve heard about it but don\'t really understand how it works.',
-      // Additional unique details
-      personality: 'Curious, eager to learn, slightly anxious about financial decisions',
-      lifestyle: 'Young professional, lives in shared apartment, explores Mumbai on weekends',
-      financialBehavior: 'Learning about personal finance, follows financial influencers on social media',
-      decisionMaking: 'Seeks validation from peers, reads reviews extensively, asks many questions',
-      uniqueTraits: [
-        'Follows fintech influencers on Instagram',
-        'Saves screenshots of important information',
-        'Uses emojis in messages frequently',
-        'Prefers video tutorials over text instructions'
-      ],
-      specificNeeds: [
-        'Beginner-friendly explanations',
-        'Comparison tools for different loan options',
-        'Educational content about financial terms',
-        'Peer reviews and ratings'
-      ]
-    },
-    {
-      id: 'sample-user-4',
-      name: 'Sanjay Gupta',
-      photoDescription: 'A man in business casual attire, looking engaged and enthusiastic',
-      source: documents[0]?.filename || 'research-document',
-      age: 30,
-      gender: 'Male',
-      occupation: 'Manager at a financial services company',
-      education: 'MBA in Finance',
-      location: 'Delhi, India',
-      income: '₹70,000 per month',
-      maritalStatus: 'Married',
-      creditScore: 780,
-      category: 'CAT A (High tech-savviness and financial exposure)',
-      bio: 'Sanjay is a manager at a leading financial services company in Delhi. He\'s been in the industry for 7 years and is passionate about financial technology. He enjoys networking and attending industry events.',
-      techSavviness: 'High',
-      communicationStyle: 'Professional and formal',
-      behaviors: [
-        'Actively uses financial apps like Moneyview, Cred, and Paytm',
-        'Completes tasks efficiently',
-        'Provides feedback and suggestions for app improvements'
-      ],
-      preferences: [
-        'Apps with advanced features and customization options',
-        'Personalized offers based on usage',
-        'Comprehensive financial management tools'
-      ],
-      painPoints: [
-        'Frustrated by unclear reward redemption terms',
-        'Dislikes repetitive processes (e.g., multiple rating screens)',
-        'Wants more personalized offers based on usage'
-      ],
-      goals: [
-        'Maximize rewards (e.g., Mcoins) through app usage',
-        'Engage with app features for financial management',
-        'Stay updated with the latest fintech trends'
-      ],
-      technologyUse: 'Uses a smartphone, laptop, and tablet; Prefers apps with advanced features and customization options',
-      quote: 'I love earning rewards, but I need to understand how to use them effectively. I can calculate EMI in my head and compare different loan products based on effective interest rates.',
-      // Additional unique details
-      personality: 'Analytical, strategic thinker, values efficiency and optimization',
-      lifestyle: 'Senior professional, works in corporate environment, attends industry conferences',
-      financialBehavior: 'Sophisticated user, maximizes rewards, uses multiple financial products strategically',
-      decisionMaking: 'Data-driven, compares multiple options, negotiates for better terms',
-      uniqueTraits: [
-        'Uses Excel for financial planning',
-        'Subscribes to financial newsletters',
-        'Participates in fintech beta testing',
-        'Has premium subscriptions to financial apps'
-      ],
-      specificNeeds: [
-        'Advanced analytics and reporting',
-        'Customizable dashboard',
-        'API access for integration',
-        'Priority customer support'
-      ]
-    },
-    {
-      id: 'sample-user-5',
-      name: 'Priya Singh',
-      photoDescription: 'A professional woman in business attire, looking confident and approachable',
-      source: documents[0]?.filename || 'research-document',
-      age: 32,
-      gender: 'Female',
-      occupation: 'Marketing Manager',
-      education: "Master's in Marketing",
-      location: 'Pune, India',
-      income: '₹45,000 per month',
-      maritalStatus: 'Married',
-      creditScore: 720,
-      category: 'CAT B (Moderate to high tech-savviness, good financial exposure)',
-      bio: 'Priya works as a marketing manager at a digital agency in Pune. She\'s been in marketing for 8 years and is tech-savvy. She enjoys traveling, reading business books, and spending time with her family.',
-      techSavviness: 'High',
-      communicationStyle: 'Friendly and conversational',
-      behaviors: [
-        'Uses multiple financial apps for different purposes',
-        'Compares options before making decisions',
-        'Values user reviews and recommendations'
-      ],
-      preferences: [
-        'Clean, modern interfaces',
-        'Comprehensive information and transparency',
-        'Good customer support'
-      ],
-      painPoints: [
-        'Finds some apps too complex for simple tasks',
-        'Concerned about data privacy and security',
-        'Wants better integration between different financial services'
-      ],
-      goals: [
-        'Manage personal and family finances efficiently',
-        'Find the best deals and offers',
-        'Build a good credit history'
-      ],
-      technologyUse: 'Uses smartphone, laptop, and tablet; Comfortable with most digital platforms',
-      quote: 'I want financial apps that make my life easier, not more complicated. I understand basic EMI concepts but prefer apps that explain things in simple terms.',
-      // Additional unique details
-      personality: 'Balanced, family-focused, values simplicity and efficiency',
-      lifestyle: 'Working mother, manages work-life balance, enjoys weekend family time',
-      financialBehavior: 'Strategic planner, balances multiple financial goals, values security',
-      decisionMaking: 'Research-oriented, seeks expert opinions, considers long-term impact',
-      uniqueTraits: [
-        'Uses calendar apps for financial planning',
-        'Prefers apps with family sharing features',
-        'Values eco-friendly and socially responsible options',
-        'Uses voice assistants for quick queries'
-      ],
-      specificNeeds: [
-        'Family financial planning tools',
-        'Privacy and security features',
-        'Integration with other productivity apps',
-        'Clear, jargon-free communication'
-      ]
-    }
-  ];
-  
-  return sampleUsers;
-}
-
-// Advanced Analytics Endpoints
-app.get('/api/admin-research/analytics', async (req, res) => {
-  try {
-    const analytics = analyticsService.getCurrentMetrics();
-    res.json({
-      success: true,
-      analytics: analytics
-    });
-  } catch (error) {
-    console.error('Error getting analytics:', error);
-    res.status(500).json({ success: false, error: 'Failed to get analytics' });
-  }
-});
-
-app.get('/api/admin-research/analytics/realtime', async (req, res) => {
-  try {
-    const timeWindow = parseInt(req.query.timeWindow) || 3600000; // 1 hour default
-    const realTimeAnalytics = analyticsService.getRealTimeAnalytics(timeWindow);
-    res.json({
-      success: true,
-      analytics: realTimeAnalytics
-    });
-  } catch (error) {
-    console.error('Error getting real-time analytics:', error);
-    res.status(500).json({ success: false, error: 'Failed to get real-time analytics' });
-  }
-});
-
-app.get('/api/admin-research/analytics/bias', async (req, res) => {
-  try {
-    const biasReport = analyticsService.detectBias();
-    res.json({
-      success: true,
-      biasReport: biasReport
-    });
-  } catch (error) {
-    console.error('Error detecting bias:', error);
-    res.status(500).json({ success: false, error: 'Failed to detect bias' });
-  }
-});
-
-// Vector Search Endpoints
-app.post('/api/admin-research/personas/similar', async (req, res) => {
-  try {
-    const { persona, threshold = 0.7 } = req.body;
-    const allPersonas = req.body.allPersonas || [];
-    
-    const similarPersonas = vectorSearchService.findSimilarPersonas(persona, allPersonas, threshold);
-    res.json({
-      success: true,
-      similarPersonas: similarPersonas
-    });
-  } catch (error) {
-    console.error('Error finding similar personas:', error);
-    res.status(500).json({ success: false, error: 'Failed to find similar personas' });
-  }
-});
-
-app.post('/api/admin-research/personas/group', async (req, res) => {
-  try {
-    const { personas, threshold = 0.6 } = req.body;
-    const groups = vectorSearchService.groupPersonasBySimilarity(personas, threshold);
-    res.json({
-      success: true,
-      groups: groups
-    });
-  } catch (error) {
-    console.error('Error grouping personas:', error);
-    res.status(500).json({ success: false, error: 'Failed to group personas' });
-  }
-});
-
-app.post('/api/admin-research/personas/diversity', async (req, res) => {
-  try {
-    const { personas } = req.body;
-    const diversityAnalysis = vectorSearchService.analyzePersonaDiversity(personas);
-    res.json({
-      success: true,
-      diversity: diversityAnalysis
-    });
-  } catch (error) {
-    console.error('Error analyzing diversity:', error);
-    res.status(500).json({ success: false, error: 'Failed to analyze diversity' });
-  }
-});
-
-// Session Management Endpoints
-app.get('/api/admin-research/session/:sessionId', async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    const sessionData = await redisService.getPersonaSession(sessionId);
-    
-    if (sessionData) {
-      res.json({
-        success: true,
-        session: sessionData
-      });
-    } else {
-      res.status(404).json({
-        success: false,
-        error: 'Session not found'
-      });
-    }
-  } catch (error) {
-    console.error('Error getting session:', error);
-    res.status(500).json({ success: false, error: 'Failed to get session' });
-  }
-});
-
-// Persona Interaction Tracking
-app.post('/api/admin-research/personas/:personaId/interact', async (req, res) => {
-  try {
-    const { personaId } = req.params;
-    const { interactionType, details } = req.body;
-    
-    analyticsService.trackPersonaInteraction(personaId, interactionType, details);
-    
-    res.json({
-      success: true,
-      message: 'Interaction tracked successfully'
-    });
-  } catch (error) {
-    console.error('Error tracking interaction:', error);
-    res.status(500).json({ success: false, error: 'Failed to track interaction' });
-  }
-});
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Advanced AI Backend running on port ${PORT}`);
+  console.log(`🚀 Human-like AI Chat System running on port ${PORT}`);
   console.log(`📡 Health check: http://localhost:${PORT}/api/health`);
   console.log(`📋 Projects: http://localhost:${PORT}/api/projects`);
-  console.log('🔍 Advanced AI Persona Generation with Indian Context');
-  console.log('📈 Real-time Analytics and Bias Detection');
-  console.log('🔗 Vector Search and Similarity Analysis');
+  console.log(`🤖 Agents: http://localhost:${PORT}/api/agents`);
+  console.log(`💬 Chat: http://localhost:${PORT}/api/chat`);
+  console.log(`📄 Document Upload: http://localhost:${PORT}/api/admin-research/upload`);
+  console.log(`🔍 Process Documents: http://localhost:${PORT}/api/admin-research/process-documents`);
+  console.log('🎭 Human-like AI Agents with Natural Conversations');
+  console.log('💭 Realistic Persona-based Responses');
+  console.log('🔍 Cultural Context and Language Patterns');
+  console.log('💬 Dual-Agent Chat System Ready');
+  console.log('📄 Document-based Agent Generation Ready');
 });

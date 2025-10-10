@@ -4,7 +4,6 @@ import {
   Brain, 
   Users, 
   Target, 
-  Settings as SettingsIcon, 
   Shield, 
   BarChart3,
   FileText,
@@ -21,7 +20,6 @@ import BeautifulAgentBuilder from './BeautifulAgentBuilder';
 import BiasChecker from './BiasChecker';
 import AgentPreview from './AgentPreview';
 import AgentDisplay from './AgentDisplay';
-import Settings from './Settings';
 import DataIngestionAndAgentBuilder from '../agents/DataIngestionAndAgentBuilder';
 
 interface CentralData {
@@ -33,6 +31,14 @@ interface CentralData {
 
 interface ResearchCentralDashboardProps {
   onLogout?: () => void;
+}
+
+interface MenuItem {
+  id: string;
+  label: string;
+  icon: any;
+  description: string;
+  action?: () => void;
 }
 
 export default function ResearchCentralDashboard({ onLogout }: ResearchCentralDashboardProps) {
@@ -369,16 +375,12 @@ export default function ResearchCentralDashboard({ onLogout }: ResearchCentralDa
     }
   };
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     { id: 'overview', label: 'Overview', icon: BarChart3, description: 'System status and metrics' },
     { id: 'upload-build', label: 'Upload & Build Agents', icon: Upload, description: 'Upload documents and build AI agents in one workflow' },
     { id: 'ai-agents', label: 'AI Agents', icon: Bot, description: 'Manage and control your AI agents generated from research data' },
     { id: 'bias', label: 'Bias Checker', icon: Shield, description: 'Ethical bias detection' },
     { id: 'preview', label: 'Agent Preview', icon: FileText, description: 'Test agent responses' },
-    { id: 'advanced-agents', label: 'Advanced Agent System', icon: Zap, description: 'Full-featured agent management platform', action: () => navigate('/admin/agents') },
-    { id: 'advanced-dashboard', label: 'Advanced Dashboard', icon: BarChart3, description: 'AI-powered analytics and performance metrics', action: () => navigate('/admin/advanced-dashboard') },
-    { id: 'multimodal-analyzer', label: 'Multimodal Analyzer', icon: Brain, description: 'Visual and audio content analysis with AI', action: () => navigate('/admin/multimodal-analyzer') },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon, description: 'System configuration and preferences' }
   ];
 
   if (isLoading) {
@@ -551,7 +553,6 @@ export default function ResearchCentralDashboard({ onLogout }: ResearchCentralDa
             )}
             {currentView === 'bias' && <BiasChecker onBiasChecked={loadCentralData} />}
             {currentView === 'preview' && <AgentPreview agents={centralData.agents || []} />}
-            {currentView === 'settings' && <Settings />}
           </div>
         </div>
       </div>

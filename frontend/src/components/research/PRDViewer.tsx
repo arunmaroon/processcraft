@@ -10,6 +10,7 @@ import {
 import { Project, PRD } from '../../types';
 import Button from '../shared/Button';
 import PRDGenerator from './PRDGenerator';
+import { formatPRDMarkdown, buildPRDTableOfContents, PRDHeading } from '../../utils/prdFormatter';
 
 interface PRDViewerProps {
   project: Project;
@@ -26,6 +27,7 @@ export default function PRDViewer({ project, prd, onPRDUpdate }: PRDViewerProps)
   const [showEditForm, setShowEditForm] = useState(false);
   const [savedFormData, setSavedFormData] = useState<any>(null);
   const [generatedPRD, setGeneratedPRD] = useState<any>(null);
+  const [toc, setToc] = useState<PRDHeading[]>([]);
 
   useEffect(() => {
     console.log('🔍 PRD Data received:', JSON.stringify(prd, null, 2));
@@ -68,6 +70,20 @@ export default function PRDViewer({ project, prd, onPRDUpdate }: PRDViewerProps)
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Build Table of Contents when PRD changes
+  useEffect(() => {
+    const contentString = (
+      displayPRD?.content ||
+      displayPRD?.generatedContent?.content ||
+      displayPRD?.sections?.overview ||
+      displayPRD?.description ||
+      (displayPRD as any)?.content ||
+      (displayPRD as any)?.generatedContent ||
+      ''
+    ) as string;
+    setToc(buildPRDTableOfContents(contentString));
+  }, [displayPRD]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -370,62 +386,124 @@ export default function PRDViewer({ project, prd, onPRDUpdate }: PRDViewerProps)
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Simple Header */}
+      {/* Elegant Header with metadata */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <FileText className="w-8 h-8 text-blue-600" />
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Product Requirements Document</h1>
-                  <p className="text-gray-600">{project.name}</p>
+            <div className="flex items-center space-x-3">
+              <FileText className="w-7 h-7 text-blue-600" />
+              <div>
+                <div className="flex items-center flex-wrap gap-2">
+                  <h1 className="text-xl font-bold text-gray-900">
+                    {displayPRD?.title || 'Product Requirements Document'}
+                  </h1>
+                  {displayPRD?.status && (
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">
+                      {displayPRD.status.replace('_', ' ')}
+                    </span>
+                  )}
+                  {displayPRD?.version && (
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">
+                      v{displayPRD.version}
+                    </span>
+                  )}
                 </div>
+                <p className="text-gray-600 text-sm">
+                  {project.name}
+                  {displayPRD?.updatedAt && (
+                    <span className="text-gray-400"> • Updated {formatDate(displayPRD.updatedAt)}</span>
+                  )}
+                </p>
               </div>
             </div>
-
             <div className="flex items-center space-x-3">
-                  <Button
-                    variant="outline"
-                    onClick={handleEditClick}
-                    leftIcon={<Edit3 className="w-4 h-4" />}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    leftIcon={<Download className="w-4 h-4" />}
-                  >
-                    Download
-                  </Button>
+              <Button
+                variant="outline"
+                onClick={handleEditClick}
+                leftIcon={<Edit3 className="w-4 h-4" />}
+              >
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                leftIcon={<Download className="w-4 h-4" />}
+              >
+                Download
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* PRD Content - Clean and Focused */}
+      {/* PRD Content with Table of Contents */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-8">
-              <div 
-                className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900"
-                dangerouslySetInnerHTML={{
-                  __html: formatPRDContent(
-                    displayPRD.content || 
-                    displayPRD.generatedContent?.content || 
-                    displayPRD.sections?.overview || 
-                    displayPRD.description ||
-                    (displayPRD as any)?.content ||
-                    (displayPRD as any)?.generatedContent ||
-                    'No PRD content available.'
-                  )
-                }}
-              />
-                      </div>
-                    </div>
-                  </div>
+        <div className="grid grid-cols-12 gap-8">
+          {/* Main content */}
+          <div className="col-span-12 lg:col-span-9">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="p-6 md:p-10">
+                {displayPRD?.description && (
+                  <p className="text-gray-700 leading-relaxed mb-6 bg-blue-50 border border-blue-100 rounded-lg p-4">
+                    {displayPRD.description}
+                  </p>
+                )}
+                <div
+                  className="prd-content"
+                  style={{ fontSize: '16px', lineHeight: '1.8' }}
+                  dangerouslySetInnerHTML={{
+                    __html: formatPRDMarkdown(
+                      (displayPRD?.content ||
+                        displayPRD?.generatedContent?.content ||
+                        displayPRD?.sections?.overview ||
+                        displayPRD?.description ||
+                        (displayPRD as any)?.content ||
+                        (displayPRD as any)?.generatedContent ||
+                        'No PRD content available.') as string
+                    ),
+                  }}
+                />
+              </div>
+            </div>
           </div>
+
+          {/* TOC sidebar */}
+          <div className="hidden lg:block col-span-3">
+            <div className="sticky top-20">
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Contents</h3>
+                {toc.length === 0 ? (
+                  <p className="text-sm text-gray-500">No sections detected</p>
+                ) : (
+                  <ul className="space-y-1 text-sm">
+                    {toc.map((h) => (
+                      <li key={h.id} className={h.level > 2 ? 'pl-4' : ''}>
+                        <a
+                          href={`#${h.id}`}
+                          className="text-gray-600 hover:text-blue-700 hover:underline"
+                        >
+                          {h.text}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              {displayPRD?.tags && displayPRD.tags.length > 0 && (
+                <div className="mt-4 bg-white border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Tags</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {displayPRD.tags.map((t) => (
+                      <span key={t} className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
           {/* Back to Top Button */}
           {showBackToTop && (

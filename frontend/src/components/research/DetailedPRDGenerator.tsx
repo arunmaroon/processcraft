@@ -395,9 +395,14 @@ export default function DetailedPRDGenerator({ project, onPRDGenerated, onPRDFin
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">Detailed PRD Generator</h2>
-          <p className="text-gray-500 text-sm">AI-powered PRD generation</p>
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-sm">
+            <FileText className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">PRD Generator</h2>
+            <p className="text-gray-500 text-sm">AI-powered product requirements generation</p>
+          </div>
         </div>
         <div className="flex items-center space-x-3">
           {!generatedPRD && (

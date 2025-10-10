@@ -7,7 +7,18 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Manrope', 'system-ui', 'sans-serif'],
+        body: ['Manrope', 'system-ui', 'sans-serif'],
+        heading: ['Manrope', 'system-ui', 'sans-serif'],
+      },
+      fontWeight: {
+        'extra-light': '200',
+        'light': '300',
+        'normal': '400',
+        'medium': '500',
+        'semibold': '600',
+        'bold': '700',
+        'extrabold': '800',
       },
       colors: {
         primary: {

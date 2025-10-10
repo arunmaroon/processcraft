@@ -680,10 +680,12 @@ This PRD serves as the foundation for product development. Additional detailed s
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center space-x-3 mb-3">
-          <FileText className="w-6 h-6 text-blue-600" />
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-sm">
+            <FileText className="w-6 h-6 text-white" />
+          </div>
           <div>
             <h1 className="text-xl font-semibold text-gray-900">PRD Generator</h1>
-            <p className="text-gray-500 text-sm">AI-powered PRD generation</p>
+            <p className="text-gray-500 text-sm">AI-powered product requirements generation</p>
           </div>
         </div>
         

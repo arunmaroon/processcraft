@@ -47,7 +47,7 @@ export default function Login() {
       const user = {
         id: roleIdMap[formData.role],
         name: formData.name,
-        email: `${formData.name.toLowerCase().replace(' ', '.')}@processcraft.com`,
+        email: `${formData.name?.toLowerCase().replace(' ', '.') || 'user'}@processcraft.com`,
         role: formData.role,
         avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=3b82f6&color=fff`,
       };
@@ -108,7 +108,7 @@ export default function Login() {
               >
                 {roleOptions.map((role) => (
                   <option key={role.value} value={role.value}>
-                    {role.label} - {role.description}
+                    {role.label}
                   </option>
                 ))}
               </select>

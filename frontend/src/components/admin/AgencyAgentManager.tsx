@@ -498,7 +498,7 @@ export default function AgencyAgentManager() {
                         {agent.certificationLevel}
                       </span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getAvailabilityColor(agent.availability)}`}>
-                        {agent.availability.replace('_', ' ')}
+                        {agent.availability?.replace('_', ' ') || 'Unknown'}
                       </span>
                     </div>
 
@@ -522,7 +522,7 @@ export default function AgencyAgentManager() {
           {activeTab !== 'overview' && activeTab !== 'agents' && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 capitalize">
-                {activeTab.replace('_', ' ')} Management
+                {activeTab?.replace('_', ' ') || 'Unknown'} Management
               </h2>
               <p className="text-gray-600">This section will be implemented based on the specific workflow requirements.</p>
             </div>

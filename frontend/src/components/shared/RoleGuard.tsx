@@ -42,7 +42,7 @@ export default function RoleGuard({
           You don't have permission to access this content.
         </p>
         <p className="text-sm text-gray-500">
-          Required roles: {allowedRoles.map(role => role.replace('_', ' ')).join(', ')}
+          Required roles: {allowedRoles.map(role => role?.replace('_', ' ') || 'Unknown').join(', ')}
         </p>
       </div>
     );

@@ -26,16 +26,18 @@ import agentRoutes from './routes/agents';
 import authRoutes from './routes/auth';
 import advancedResearchRoutes from './routes/advanced-research';
 import multiPRDRoutes from './routes/multi-prd';
+import aiAgentSystemRoutes from './routes/ai-agent-system';
+import productRoutes from './routes/products';
 console.log('🔑 Environment check:');
 console.log('CLAUDE_API_KEY:', process.env.CLAUDE_API_KEY ? 'LOADED' : 'NOT LOADED');
 console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? 'LOADED' : 'NOT LOADED');
 
 const app = express();
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:2000'],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:2000', 'http://localhost:5000', 'http://localhost:7500', 'http://localhost:5001'],
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -64,6 +66,7 @@ app.use((req, res, next) => {
 
 // API Routes
 app.use('/api/projects', projectRoutes);
+app.use('/api/products', productRoutes);
 app.use('/api/research', researchRoutes);
 app.use('/api/design', designRoutes);
 app.use('/api/ui-generation', uiGenerationRoutes);
@@ -79,6 +82,7 @@ app.use('/api/ai-agent-hub', aiAgentHubRoutes);
 app.use('/api/ux-designer', uxDesignerRoutes);
 app.use('/api/advanced-research', advancedResearchRoutes);
 app.use('/api/multi-prd', multiPRDRoutes);
+app.use('/api/ai-agent-system', aiAgentSystemRoutes);
 // Mock agent generation endpoint (temporary)
 app.post('/api/agents/generate', async (req, res) => {
   try {
