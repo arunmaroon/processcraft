@@ -19,7 +19,8 @@ import {
   ChevronLeft,
   MessageSquare,
   Brain,
-  Settings
+  Settings,
+  Bot
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -34,6 +35,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'All Projects', href: '/projects', icon: FolderOpen },
   { name: 'AI Chat', href: '/ai-chat', icon: MessageSquare },
+  { name: 'AI Setup', href: '/ai-setup', icon: Bot },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Team', href: '/team', icon: Users },
   { name: 'Settings', href: '/settings', icon: Settings },
