@@ -30,38 +30,47 @@ ProcessCraft is an end-to-end AI-powered UX design platform that empowers teams 
 - **Security**: File access restricted to project root only
 - **Storage**: File-based storage (no external database)
 
-## 📁 Project Structure
+## 📁 Clean Project Structure
 
 ```
 processcraft-poc/
-├── frontend/                 # React frontend application
-│   ├── src/
-│   │   ├── components/      # React components
-│   │   │   ├── layout/      # Layout components
-│   │   │   ├── shared/      # Shared components
-│   │   │   ├── research/    # Research stage components
-│   │   │   ├── design/      # UX design components
-│   │   │   ├── ui-generation/ # UI generation components
-│   │   │   └── code-export/ # Code export components
-│   │   ├── context/         # React Context providers
-│   │   ├── types/           # TypeScript type definitions
-│   │   └── utils/           # Utility functions
-│   └── package.json
-├── backend/                 # Node.js backend API
-│   ├── src/
-│   │   ├── routes/          # API route handlers
-│   │   ├── services/        # Business logic services
-│   │   └── server.ts        # Express server setup
-│   └── package.json
-├── data/                    # User-provided training data
-│   ├── training/            # CSV/JSON training files
-│   └── assets/              # Design system tokens, brand assets
-├── exports/                 # Generated outputs
-│   ├── research-insights/   # AI-generated research reports
-│   ├── wireframes/          # Generated wireframes
-│   ├── ui-variants/         # Persona-specific UI variants
-│   └── code/                # Production-ready code
-└── package.json             # Root package configuration
+├── 📁 frontend/                 # React frontend application
+│   ├── 📁 src/
+│   │   ├── 📁 components/       # React components
+│   │   │   ├── 📁 avinci/       # Avinci AI agent integration
+│   │   │   ├── 📁 layout/       # Layout components
+│   │   │   ├── 📁 research/     # Research stage components
+│   │   │   ├── 📁 admin/        # Admin components
+│   │   │   └── 📁 ...          # Other components
+│   │   ├── 📁 context/         # React Context providers
+│   │   ├── 📁 types/           # TypeScript type definitions
+│   │   └── 📁 utils/           # Utility functions
+│   └── 📄 package.json
+├── 📁 backend/                 # Node.js backend API
+│   ├── 📁 src/                 # Source code
+│   ├── 📁 data/                # Backend data files
+│   ├── 📁 uploads/             # File uploads
+│   ├── 📁 exports/             # Generated exports
+│   ├── 📄 package.json         # Backend dependencies
+│   └── 📄 requirements.txt     # Python requirements
+├── 📁 docs/                    # Documentation
+│   ├── 📁 setup-guides/        # Setup & configuration guides
+│   ├── 📁 version-history/     # Version documentation
+│   └── 📄 AVINCI_FULL_INTEGRATION_COMPLETE.md
+├── 📁 scripts/                 # Utility Scripts
+│   ├── 📁 test-scripts/        # Test scripts
+│   └── 📄 setup-agent-system.sh
+├── 📁 data/                    # Data & Samples
+│   ├── 📁 samples/             # Sample data files
+│   ├── 📁 uploads/             # User uploads
+│   └── 📁 exports/             # Generated exports
+├── 📁 avinci-main/             # Avinci source reference
+├── 📁 config/                  # Configuration files
+├── 📁 tests/                   # Test files
+├── 📁 exports/                 # Project exports
+├── 📄 package.json             # Root package.json
+├── 📄 README.md                # This file
+└── 📄 .env.example             # Environment template
 ```
 
 ## 🛠️ Installation & Setup

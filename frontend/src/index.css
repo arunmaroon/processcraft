@@ -5,42 +5,122 @@
 @layer base {
   * {
     @apply border-gray-200;
-    font-family: 'Manrope', system-ui, sans-serif;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   }
   html {
-    font-family: 'Manrope', system-ui, sans-serif;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    @apply antialiased;
   }
   body {
-    @apply bg-gray-50 text-gray-900 font-sans;
-    font-family: 'Manrope', system-ui, sans-serif;
+    @apply bg-gray-50 text-gray-900 antialiased;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    letter-spacing: -0.011em;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Manrope', system-ui, sans-serif;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    @apply font-bold tracking-tight;
+  }
+  h1 {
+    @apply text-2xl;
+  }
+  h2 {
+    @apply text-xl;
+  }
+  h3 {
+    @apply text-lg;
   }
   p, span, div, a, button, input, textarea, select, label, li, ul, ol, table, td, th, tr {
-    font-family: 'Manrope', system-ui, sans-serif;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   }
   /* Ensure all text elements use Manrope */
   .font-sans, .font-body, .font-heading {
-    font-family: 'Manrope', system-ui, sans-serif !important;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif !important;
   }
 }
 
 @layer components {
+  /* Card Components - AI Setup Style */
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-300;
   }
   
+  .card-gradient {
+    @apply bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300;
+  }
+  
+  .gradient-icon {
+    @apply bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg;
+  }
+  
+  /* Button Components */
   .btn-primary {
-    @apply bg-primary-500 hover:bg-primary-600 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200;
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2;
   }
   
   .btn-secondary {
-    @apply bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-lg transition-colors duration-200;
+    @apply border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2;
   }
   
+  .btn-ghost {
+    @apply text-gray-600 hover:text-gray-900 hover:bg-gray-100 font-medium px-4 py-2 rounded-lg transition-colors duration-200;
+  }
+  
+  /* Input Components */
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200;
+  }
+  
+  /* Page Headers */
+  .page-header {
+    @apply bg-white border-b border-gray-200;
+  }
+  
+  .page-header-content {
+    @apply max-w-7xl mx-auto px-6 py-6;
+  }
+  
+  .page-title {
+    @apply text-2xl font-bold text-gray-900 tracking-tight;
+  }
+  
+  .page-subtitle {
+    @apply text-gray-600 text-sm mt-1;
+  }
+  
+  /* Tabs */
+  .tab-nav {
+    @apply bg-white border-b border-gray-200;
+  }
+  
+  .tab-nav-content {
+    @apply max-w-7xl mx-auto px-6;
+  }
+  
+  .tab-button {
+    @apply flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors;
+  }
+  
+  .tab-button-active {
+    @apply border-blue-500 text-blue-600;
+  }
+  
+  .tab-button-inactive {
+    @apply border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300;
+  }
+  
+  /* Content Containers */
+  .content-container {
+    @apply max-w-7xl mx-auto px-6 py-8;
+  }
+  
+  /* Stats Cards */
+  .stat-card {
+    @apply bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow;
+  }
+  
+  /* Badge Components */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
   
   .stage-badge {
@@ -69,5 +149,18 @@
   
   .stage-approved {
     @apply bg-emerald-100 text-emerald-800;
+  }
+  
+  /* Feature Cards */
+  .feature-card {
+    @apply bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow;
+  }
+  
+  .feature-header {
+    @apply p-6 text-white;
+  }
+  
+  .feature-content {
+    @apply p-6;
   }
 }

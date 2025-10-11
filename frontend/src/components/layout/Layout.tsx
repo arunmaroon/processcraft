@@ -23,23 +23,29 @@ export default function Layout({ children }: LayoutProps) {
     );
   }
 
+  const mainOffset = sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-0';
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-      
-      <div className="flex">
-        <Sidebar 
-          isOpen={sidebarOpen} 
+
+      <div className="flex relative">
+        <Sidebar
+          isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
-        
-        <main className={`flex-1 transition-all duration-300 ease-in-out ${
-          sidebarCollapsed ? 'lg:ml-4' : 'lg:ml-4'
-        }`}>
-          <div className="p-4">
-            {children}
+
+        <main
+          className={`flex-1 min-h-screen transition-all duration-300 ease-in-out ${mainOffset} bg-gradient-to-br from-slate-50 via-white to-slate-100`}
+        >
+          <div className="w-full">
+            <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+              <div className="space-y-8">
+                {children}
+              </div>
+            </div>
           </div>
         </main>
       </div>

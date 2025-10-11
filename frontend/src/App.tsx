@@ -12,9 +12,8 @@ import AdminLogin from './components/admin/AdminLogin';
 import ResearchCentralDashboard from './components/admin/ResearchCentralDashboard';
 import AIAgentHub from './components/admin/AIAgentHub';
 import UXDesignerModule from './components/ux/UXDesignerModule';
-import AIAgentChatTab from './components/ai-agent-chat/AIAgentChatTab';
+import AIChatTab from './components/ai-chat/AIChatTab';
 import Settings from './components/admin/Settings';
-import AISetup from './components/ai/AISetup';
 import { useApp } from './context/AppContext';
 import { SafeMapErrorBoundary } from './components/SafeMapErrorBoundary';
 
@@ -104,8 +103,7 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<ProjectManager />} />
             <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/ai-chat" element={<AIAgentChatTab />} />
-            <Route path="/ai-setup" element={<AISetup />} />
+            <Route path="/ai-chat" element={<AIChatTab />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/team" element={<TeamPage />} />
             <Route path="/settings" element={<Settings />} />
@@ -156,8 +154,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<ProjectManager />} />
           <Route path="/projects" element={<ProjectsPage />} />
-          <Route path="/ai-chat" element={<AIAgentChatTab />} />
-          <Route path="/ai-setup" element={<AISetup />} />
+          <Route path="/ai-chat" element={<AIChatTab />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/team" element={<TeamPage />} />
           <Route path="/settings" element={<Settings />} />
