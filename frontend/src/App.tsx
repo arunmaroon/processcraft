@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import Layout from './components/layout/Layout';
-import ProjectManager from './components/layout/ProjectManager';
+import ProjectManagerClean from './components/layout/ProjectManagerClean';
 import ProjectDetail from './components/layout/ProjectDetail';
 import ProjectsPage from './components/layout/ProjectsPage';
 import AnalyticsPage from './components/layout/AnalyticsPage';
@@ -101,7 +101,7 @@ function AppContent() {
       <Router>
         <Layout>
           <Routes>
-            <Route path="/" element={<ProjectManager />} />
+            <Route path="/" element={<ProjectManagerClean />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/ai-chat" element={<AIChatTab />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
@@ -152,7 +152,7 @@ function AppContent() {
     <Router>
       <Layout>
         <Routes>
-          <Route path="/" element={<ProjectManager />} />
+          <Route path="/" element={<ProjectManagerClean />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/ai-chat" element={<AIChatTab />} />
           <Route path="/analytics" element={<AnalyticsPage />} />

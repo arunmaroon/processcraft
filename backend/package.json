@@ -1,6 +1,6 @@
 {
   "name": "processcraft-backend",
-  "version": "1.12-sirius",
+  "version": "1.13-sirius",
   "description": "ProcessCraft Backend API",
   "main": "dist/server.js",
   "scripts": {

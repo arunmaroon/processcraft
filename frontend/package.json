@@ -1,7 +1,7 @@
 {
   "name": "processcraft-frontend",
   "private": true,
-  "version": "1.12-sirius",
+  "version": "1.13-sirius",
   "type": "module",
   "scripts": {
     "dev": "vite",

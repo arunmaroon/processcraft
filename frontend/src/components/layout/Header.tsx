@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Menu, Search, User, LogOut, RefreshCw } from 'lucide-react';
+import { Bell, Menu, User, LogOut, RefreshCw } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
 
@@ -63,56 +63,41 @@ export default function Header({ onMenuClick }: HeaderProps) {
   if (!state.user) return null;
 
   return (
-    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-gray-200 shadow-sm px-3 py-2 lg:px-6">
+    <header className="sticky top-0 z-40 bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
+        {/* Left: Logo */}
+        <div className="flex items-center space-x-4">
           <button
             onClick={onMenuClick}
-            className="lg:hidden p-1.5 rounded hover:bg-gray-100 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <Menu className="w-4 h-4" />
+            <Menu className="w-5 h-5 text-gray-600" />
           </button>
           
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-500 rounded-lg flex items-center justify-center shadow-sm">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold text-gray-900">ProcessCraft</h1>
-              <p className="text-xs text-gray-500 hidden sm:block">Advanced AI research workspace</p>
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900">ProcessCraft.</h1>
         </div>
 
-        <div className="flex items-center space-x-4">
-          {/* Search */}
-          <div className="hidden md:block relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search projects..."
-              className="pl-10 pr-4 py-2 w-72 border border-gray-200 rounded-lg bg-white/70 backdrop-blur focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-inner"
-            />
-          </div>
+        {/* Center: Welcome Message */}
+        <div className="flex-1 text-center">
+          <h2 className="text-2xl font-bold text-gray-900">Welcome, {state.user.name}!</h2>
+        </div>
 
+        {/* Right: Notifications and User */}
+        <div className="flex items-center space-x-4">
           {/* Notifications */}
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-6 h-6 text-gray-600" />
               {unreadNotifications.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  {unreadNotifications.length}
-                </span>
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
               )}
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
                 <div className="p-4 border-b border-gray-200">
                   <h3 className="font-semibold text-gray-900">Notifications</h3>
                 </div>
@@ -125,7 +110,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                     unreadNotifications.map((notification) => (
                       <div key={notification.id} className="p-4 border-b border-gray-100 hover:bg-gray-50">
                         <div className="flex items-start space-x-3">
-                          <div className="w-2 h-2 bg-primary-500 rounded-full mt-2 flex-shrink-0"></div>
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900">
                               {notification.title}
@@ -147,117 +132,108 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </div>
 
           {/* User Profile */}
-          <div className="flex items-center space-x-3">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-gray-900">{state.user.name}</p>
-              <p className="text-xs text-gray-500 capitalize">
-                {state.user.role?.replace('_', ' ').toLowerCase() || 'user'}
-              </p>
-            </div>
-            <div className="relative">
-              <button
-                onClick={() => setShowRoleSwitch(!showRoleSwitch)}
-                className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                  {state.user.avatar ? (
-                    <img
-                      src={state.user.avatar}
-                      alt={state.user.name}
-                      className="w-9 h-9 object-cover"
-                    />
-                  ) : (
-                    <User className="w-4 h-4 text-gray-600" />
-                  )}
-                </div>
-                <RefreshCw className="w-4 h-4 text-gray-500" />
-              </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowRoleSwitch(!showRoleSwitch)}
+              className="flex items-center space-x-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                {state.user.avatar ? (
+                  <img
+                    src={state.user.avatar}
+                    alt={state.user.name}
+                    className="w-10 h-10 object-cover"
+                  />
+                ) : (
+                  <User className="w-5 h-5 text-gray-600" />
+                )}
+              </div>
+            </button>
 
-              {/* Role Switch Dropdown */}
-              {showRoleSwitch && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                  <div className="p-4 border-b border-gray-200">
-                    <h3 className="font-semibold text-gray-900">Switch Role</h3>
-                    <p className="text-sm text-gray-600">Select a new role and enter passcode</p>
+            {/* Role Switch Dropdown */}
+            {showRoleSwitch && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+                <div className="p-4 border-b border-gray-200">
+                  <h3 className="font-semibold text-gray-900">Switch Role</h3>
+                  <p className="text-sm text-gray-600">Select a new role and enter passcode</p>
+                </div>
+                
+                <div className="p-4 space-y-4">
+                  {/* Role Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select New Role
+                    </label>
+                    <div className="grid grid-cols-1 gap-2">
+                      {roleOptions.map((role) => (
+                        <button
+                          key={role.value}
+                          onClick={() => handleRoleSwitch(role.value)}
+                          className={`p-3 text-left rounded-lg border transition-colors ${
+                            selectedRole === role.value
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="font-medium text-sm">{role.label}</div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  
-                  <div className="p-4 space-y-4">
-                    {/* Role Selection */}
+
+                  {/* Passcode Input */}
+                  {selectedRole && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Select New Role
+                        Enter Passcode
                       </label>
-                      <div className="grid grid-cols-1 gap-2">
-                        {roleOptions.map((role) => (
-                          <button
-                            key={role.value}
-                            onClick={() => handleRoleSwitch(role.value)}
-                            className={`p-2 text-left rounded-lg border transition-colors ${
-                              selectedRole === role.value
-                                ? 'border-primary-500 bg-primary-50 text-primary-700'
-                                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                            }`}
-                          >
-                            <div className="font-medium text-sm">{role.label}</div>
-                          </button>
-                        ))}
-                      </div>
+                      <input
+                        type="password"
+                        value={switchPasscode}
+                        onChange={(e) => setSwitchPasscode(e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          passcodeError ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        placeholder="Enter passcode"
+                      />
+                      {passcodeError && (
+                        <p className="text-sm text-red-600 mt-1">{passcodeError}</p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        Passcode: <span className="font-mono font-bold">01234</span>
+                      </p>
                     </div>
+                  )}
 
-                    {/* Passcode Input */}
-                    {selectedRole && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Enter Passcode
-                        </label>
-                        <input
-                          type="password"
-                          value={switchPasscode}
-                          onChange={(e) => setSwitchPasscode(e.target.value)}
-                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                            passcodeError ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                          placeholder="Enter passcode"
-                        />
-                        {passcodeError && (
-                          <p className="text-sm text-red-600 mt-1">{passcodeError}</p>
-                        )}
-                        <p className="text-xs text-gray-500 mt-1">
-                          Passcode: <span className="font-mono font-bold">01234</span>
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex justify-end space-x-2 pt-2">
-                      <button
-                        onClick={() => setShowRoleSwitch(false)}
-                        className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleRoleSwitchSubmit}
-                        disabled={!selectedRole || !switchPasscode}
-                        className="px-3 py-1 text-sm bg-primary-500 text-white rounded hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Switch Role
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="p-4 border-t border-gray-200">
+                  {/* Actions */}
+                  <div className="flex justify-end space-x-2 pt-2">
                     <button
-                      onClick={handleLogout}
-                      className="flex items-center space-x-2 w-full text-left text-sm text-red-600 hover:text-red-700"
+                      onClick={() => setShowRoleSwitch(false)}
+                      className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100"
                     >
-                      <LogOut className="w-4 h-4" />
-                      <span>Logout</span>
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleRoleSwitchSubmit}
+                      disabled={!selectedRole || !switchPasscode}
+                      className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Switch Role
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
+
+                <div className="p-4 border-t border-gray-200">
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center space-x-2 w-full text-left text-sm text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
