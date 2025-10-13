@@ -35,10 +35,8 @@ export default function Layout({ children }: LayoutProps) {
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
         
-        <main className={`flex-1 transition-all duration-300 ease-in-out ${
-          sidebarCollapsed ? 'lg:ml-4' : 'lg:ml-4'
-        }`}>
-          <div className="p-4">
+        <main className="flex-1 transition-all duration-300 ease-in-out">
+          <div className="p-6">
             {children}
           </div>
         </main>

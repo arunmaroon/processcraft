@@ -63,23 +63,23 @@ export default function Header({ onMenuClick }: HeaderProps) {
   if (!state.user) return null;
 
   return (
-    <header className="bg-white border-b border-gray-200 px-3 py-2 lg:px-4">
+    <header className="bg-white shadow-sm border-b border-gray-200 px-4 py-3 lg:px-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <button
             onClick={onMenuClick}
-            className="lg:hidden p-1.5 rounded hover:bg-gray-100 transition-colors"
+            className="lg:hidden p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
           >
-            <Menu className="w-4 h-4" />
+            <Menu className="w-5 h-5" />
           </button>
           
-          <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 bg-primary-500 rounded flex items-center justify-center">
-              <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
             </div>
-            <h1 className="text-lg font-semibold text-gray-900">ProcessCraft</h1>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">ProcessCraft</h1>
           </div>
         </div>
 
@@ -90,7 +90,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <input
               type="text"
               placeholder="Search projects..."
-              className="pl-10 pr-4 py-2 w-64 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="pl-10 pr-4 py-3 w-64 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all duration-200"
             />
           </div>
 
@@ -98,18 +98,18 @@ export default function Header({ onMenuClick }: HeaderProps) {
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+              className="p-2 rounded-xl hover:bg-gray-100 transition-all duration-200 relative"
             >
               <Bell className="w-5 h-5" />
               {unreadNotifications.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs rounded-full flex items-center justify-center shadow-lg">
                   {unreadNotifications.length}
                 </span>
               )}
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-200 z-50">
                 <div className="p-4 border-b border-gray-200">
                   <h3 className="font-semibold text-gray-900">Notifications</h3>
                 </div>
@@ -120,9 +120,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
                     </div>
                   ) : (
                     unreadNotifications.map((notification) => (
-                      <div key={notification.id} className="p-4 border-b border-gray-100 hover:bg-gray-50">
+                      <div key={notification.id} className="p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
                         <div className="flex items-start space-x-3">
-                          <div className="w-2 h-2 bg-primary-500 rounded-full mt-2 flex-shrink-0"></div>
+                          <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full mt-2 flex-shrink-0"></div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900">
                               {notification.title}
@@ -154,9 +154,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <div className="relative">
               <button
                 onClick={() => setShowRoleSwitch(!showRoleSwitch)}
-                className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex items-center space-x-2 p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
               >
-                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
                   {state.user.avatar ? (
                     <img
                       src={state.user.avatar}
@@ -164,7 +164,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                       className="w-8 h-8 rounded-full"
                     />
                   ) : (
-                    <User className="w-4 h-4 text-gray-600" />
+                    <User className="w-4 h-4 text-white" />
                   )}
                 </div>
                 <RefreshCw className="w-4 h-4 text-gray-500" />
@@ -172,7 +172,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
               {/* Role Switch Dropdown */}
               {showRoleSwitch && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-200 z-50">
                   <div className="p-4 border-b border-gray-200">
                     <h3 className="font-semibold text-gray-900">Switch Role</h3>
                     <p className="text-sm text-gray-600">Select a new role and enter passcode</p>
@@ -189,9 +189,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
                           <button
                             key={role.value}
                             onClick={() => handleRoleSwitch(role.value)}
-                            className={`p-2 text-left rounded-lg border transition-colors ${
+                            className={`p-3 text-left rounded-xl border transition-all duration-200 ${
                               selectedRole === role.value
-                                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                                ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
                                 : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                             }`}
                           >
@@ -211,7 +211,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                           type="password"
                           value={switchPasscode}
                           onChange={(e) => setSwitchPasscode(e.target.value)}
-                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                          className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all duration-200 ${
                             passcodeError ? 'border-red-500' : 'border-gray-300'
                           }`}
                           placeholder="Enter passcode"
@@ -236,7 +236,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                       <button
                         onClick={handleRoleSwitchSubmit}
                         disabled={!selectedRole || !switchPasscode}
-                        className="px-3 py-1 text-sm bg-primary-500 text-white rounded hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
                       >
                         Switch Role
                       </button>
