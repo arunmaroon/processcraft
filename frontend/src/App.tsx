@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import Layout from './components/layout/Layout';
-import ProjectManager from './components/layout/ProjectManager';
+import ProjectManagerClean from './components/layout/ProjectManagerClean';
 import ProjectDetail from './components/layout/ProjectDetail';
 import ProjectsPage from './components/layout/ProjectsPage';
 import AnalyticsPage from './components/layout/AnalyticsPage';
@@ -12,9 +12,8 @@ import AdminLogin from './components/admin/AdminLogin';
 import ResearchCentralDashboard from './components/admin/ResearchCentralDashboard';
 import AIAgentHub from './components/admin/AIAgentHub';
 import UXDesignerModule from './components/ux/UXDesignerModule';
-import AIAgentChatTab from './components/ai-agent-chat/AIAgentChatTab';
+import AIChatTab from './components/ai-chat/AIChatTab';
 import Settings from './components/admin/Settings';
-import AISetup from './components/ai/AISetup';
 import { useApp } from './context/AppContext';
 import { SafeMapErrorBoundary } from './components/SafeMapErrorBoundary';
 
@@ -102,10 +101,9 @@ function AppContent() {
       <Router>
         <Layout>
           <Routes>
-            <Route path="/" element={<ProjectManager />} />
+            <Route path="/" element={<ProjectManagerClean />} />
             <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/ai-chat" element={<AIAgentChatTab />} />
-            <Route path="/ai-setup" element={<AISetup />} />
+            <Route path="/ai-chat" element={<AIChatTab />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/team" element={<TeamPage />} />
             <Route path="/settings" element={<Settings />} />
@@ -154,10 +152,9 @@ function AppContent() {
     <Router>
       <Layout>
         <Routes>
-          <Route path="/" element={<ProjectManager />} />
+          <Route path="/" element={<ProjectManagerClean />} />
           <Route path="/projects" element={<ProjectsPage />} />
-          <Route path="/ai-chat" element={<AIAgentChatTab />} />
-          <Route path="/ai-setup" element={<AISetup />} />
+          <Route path="/ai-chat" element={<AIChatTab />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/team" element={<TeamPage />} />
           <Route path="/settings" element={<Settings />} />

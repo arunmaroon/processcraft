@@ -1,6 +1,6 @@
 {
   "name": "processcraft-poc",
-  "version": "1.11-sirius",
+  "version": "1.13-sirius",
   "description": "AI-Powered UX Design Workflow Platform",
   "main": "index.js",
   "scripts": {
