@@ -1,318 +1,124 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Bold, 
-  Italic, 
-  Underline, 
-  Strikethrough, 
-  List, 
-  ListOrdered, 
-  AlignLeft, 
-  AlignCenter, 
-  AlignRight,
-  Indent,
-  Outdent,
-  Link,
-  Image,
-  Table,
-  Code,
-  Save,
-  Download,
-  Eye,
-  Edit3,
-  CheckCircle,
-  X
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { Save, ArrowLeft, Bot, MessageCircle, Eye, MoreHorizontal } from 'lucide-react';
+import { EnhancedPRD } from '../../types/prd-enhanced';
+import { enhancedPRDService } from '../../services/enhancedPRDService';
 
 interface PRDEditorProps {
-  content: string;
-  onContentChange: (content: string) => void;
-  onSave: () => void;
-  onFinalize: () => void;
-  isEditing?: boolean;
-  onToggleEdit?: () => void;
+  prd: EnhancedPRD;
+  onSave: (prd: EnhancedPRD) => void;
+  onCancel: () => void;
 }
 
-export default function PRDEditor({ 
-  content, 
-  onContentChange, 
-  onSave, 
-  onFinalize, 
-  isEditing = true,
-  onToggleEdit 
-}: PRDEditorProps) {
-  const [isPreview, setIsPreview] = useState(false);
-  const editorRef = useRef<HTMLDivElement>(null);
+export default function PRDEditor({ prd, onSave, onCancel }: PRDEditorProps) {
+  const [editedPRD, setEditedPRD] = useState<EnhancedPRD>(prd);
+  const [isAISidebarOpen, setIsAISidebarOpen] = useState(false);
 
-  const execCommand = (command: string, value?: string) => {
-    document.execCommand(command, false, value);
-    editorRef.current?.focus();
-  };
-
-  const insertLink = () => {
-    const url = prompt('Enter URL:');
-    if (url) {
-      execCommand('createLink', url);
-    }
-  };
-
-  const insertTable = () => {
-    const rows = prompt('Number of rows:', '3');
-    const cols = prompt('Number of columns:', '3');
-    if (rows && cols) {
-      let tableHTML = '<table border="1" style="border-collapse: collapse; width: 100%;">';
-      for (let i = 0; i < parseInt(rows); i++) {
-        tableHTML += '<tr>';
-        for (let j = 0; j < parseInt(cols); j++) {
-          tableHTML += `<td style="padding: 8px; border: 1px solid #ccc;">Cell ${i + 1},${j + 1}</td>`;
-        }
-        tableHTML += '</tr>';
-      }
-      tableHTML += '</table>';
-      execCommand('insertHTML', tableHTML);
-    }
-  };
-
-  const insertCodeBlock = () => {
-    execCommand('insertHTML', '<pre style="background: #f4f4f4; padding: 10px; border-radius: 4px; border-left: 4px solid #007acc;"><code>// Your code here</code></pre>');
-  };
-
-  const handleContentChange = () => {
-    if (editorRef.current) {
-      onContentChange(editorRef.current.innerHTML);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Handle keyboard shortcuts
-    if (e.ctrlKey || e.metaKey) {
-      switch (e.key) {
-        case 'b':
-          e.preventDefault();
-          execCommand('bold');
-          break;
-        case 'i':
-          e.preventDefault();
-          execCommand('italic');
-          break;
-        case 'u':
-          e.preventDefault();
-          execCommand('underline');
-          break;
-        case 's':
-          e.preventDefault();
-          execCommand('strikeThrough');
-          break;
-        case 'k':
-          e.preventDefault();
-          insertLink();
-          break;
-      }
-    }
+  const handleSave = () => {
+    enhancedPRDService.savePRD(editedPRD);
+    onSave(editedPRD);
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border border-gray-200 rounded-lg overflow-hidden">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
-        <div className="flex items-center space-x-1">
-          {/* Text Formatting */}
-          <div className="flex items-center space-x-1 pr-2 border-r border-gray-300">
-            <button
-              onClick={() => execCommand('bold')}
-              className="p-2 hover:bg-gray-200 rounded"
-              title="Bold (Ctrl+B)"
-            >
-              <Bold className="w-4 h-4" />
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button onClick={onCancel} className="p-2 hover:bg-gray-100 rounded-lg">
+            <ArrowLeft className="w-5 h-5" />
             </button>
-            <button
-              onClick={() => execCommand('italic')}
-              className="p-2 hover:bg-gray-200 rounded"
-              title="Italic (Ctrl+I)"
-            >
-              <Italic className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => execCommand('underline')}
-              className="p-2 hover:bg-gray-200 rounded"
-              title="Underline (Ctrl+U)"
-            >
-              <Underline className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => execCommand('strikeThrough')}
-              className="p-2 hover:bg-gray-200 rounded"
-              title="Strikethrough (Ctrl+S)"
-            >
-              <Strikethrough className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Lists */}
-          <div className="flex items-center space-x-1 pr-2 border-r border-gray-300">
-            <button
-              onClick={() => execCommand('insertUnorderedList')}
-              className="p-2 hover:bg-gray-200 rounded"
-              title="Bullet List"
-            >
-              <List className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => execCommand('insertOrderedList')}
-              className="p-2 hover:bg-gray-200 rounded"
-              title="Numbered List"
-            >
-              <ListOrdered className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Alignment */}
-          <div className="flex items-center space-x-1 pr-2 border-r border-gray-300">
-            <button
-              onClick={() => execCommand('justifyLeft')}
-              className="p-2 hover:bg-gray-200 rounded"
-              title="Align Left"
-            >
-              <AlignLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => execCommand('justifyCenter')}
-              className="p-2 hover:bg-gray-200 rounded"
-              title="Align Center"
-            >
-              <AlignCenter className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => execCommand('justifyRight')}
-              className="p-2 hover:bg-gray-200 rounded"
-              title="Align Right"
-            >
-              <AlignRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Indentation */}
-          <div className="flex items-center space-x-1 pr-2 border-r border-gray-300">
-            <button
-              onClick={() => execCommand('indent')}
-              className="p-2 hover:bg-gray-200 rounded"
-              title="Indent"
-            >
-              <Indent className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => execCommand('outdent')}
-              className="p-2 hover:bg-gray-200 rounded"
-              title="Outdent"
-            >
-              <Outdent className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Insert Elements */}
-          <div className="flex items-center space-x-1">
-            <button
-              onClick={insertLink}
-              className="p-2 hover:bg-gray-200 rounded"
-              title="Insert Link (Ctrl+K)"
-            >
-              <Link className="w-4 h-4" />
-            </button>
-            <button
-              onClick={insertTable}
-              className="p-2 hover:bg-gray-200 rounded"
-              title="Insert Table"
-            >
-              <Table className="w-4 h-4" />
-            </button>
-            <button
-              onClick={insertCodeBlock}
-              className="p-2 hover:bg-gray-200 rounded"
-              title="Insert Code Block"
-            >
-              <Code className="w-4 h-4" />
-            </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Edit PRD</h1>
+            <p className="text-gray-600">Editing {editedPRD.title}</p>
           </div>
         </div>
 
-        {/* Right side controls */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setIsPreview(!isPreview)}
-            className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+            onClick={() => setIsAISidebarOpen(!isAISidebarOpen)}
+            className="btn-outline flex items-center gap-2"
           >
-            {isPreview ? <Edit3 className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            <span>{isPreview ? 'Edit' : 'Preview'}</span>
+            <Bot className="w-4 h-4" />
+            AI Assistant
           </button>
-          
-          {onToggleEdit && (
-            <button
-              onClick={onToggleEdit}
-              className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
-            >
-              {isEditing ? <X className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
-              <span>{isEditing ? 'Cancel' : 'Edit'}</span>
-            </button>
-          )}
-          
-          <button
-            onClick={onSave}
-            className="flex items-center space-x-1 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
+          <button onClick={handleSave} className="btn-primary flex items-center gap-2">
             <Save className="w-4 h-4" />
-            <span>Save</span>
-          </button>
-          
-          <button
-            onClick={onFinalize}
-            className="flex items-center space-x-1 px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            <CheckCircle className="w-4 h-4" />
-            <span>Finalize PRD</span>
+            Save Changes
           </button>
         </div>
       </div>
 
-      {/* Editor/Preview Area */}
-      <div className="flex-1 overflow-hidden">
-        {isPreview ? (
-          <div className="h-full overflow-y-auto p-6">
-            <div 
-              className="prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: content }}
-            />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          {editedPRD.sections.map((section) => (
+            <div key={section.id} className="card">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{section.title}</h3>
+              <textarea
+                value={section.content}
+                onChange={(e) => {
+                  const updatedSections = editedPRD.sections.map(s =>
+                    s.id === section.id 
+                      ? { 
+                          ...s, 
+                          content: e.target.value,
+                          lastModified: new Date().toISOString(),
+                          wordCount: e.target.value.split(' ').length,
+                          readingTime: Math.ceil(e.target.value.split(' ').length / 200)
+                        } 
+                      : s
+                  );
+                  setEditedPRD({ ...editedPRD, sections: updatedSections });
+                }}
+                className="textarea-field"
+                rows={6}
+                placeholder={`Enter ${section.title.toLowerCase()}...`}
+              />
+            </div>
+          ))}
+        </div>
+        
+        <div className="space-y-6">
+          <div className="card">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">PRD Info</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input
+                  type="text"
+                  value={editedPRD.title}
+                  onChange={(e) => setEditedPRD({ ...editedPRD, title: e.target.value })}
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={editedPRD.description}
+                  onChange={(e) => setEditedPRD({ ...editedPRD, description: e.target.value })}
+                  className="textarea-field"
+                  rows={3}
+                />
+              </div>
+            </div>
           </div>
-        ) : (
-          <div
-            ref={editorRef}
-            contentEditable
-            onInput={handleContentChange}
-            onKeyDown={handleKeyDown}
-            className="h-full overflow-y-auto p-6 focus:outline-none"
-            style={{ minHeight: '500px' }}
-            dangerouslySetInnerHTML={{ __html: content }}
-          />
-        )}
+          
+          {isAISidebarOpen && (
+            <div className="card">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Assistant</h3>
+              <div className="space-y-3">
+                <div className="p-3 bg-purple-50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Bot className="w-4 h-4 text-purple-600" />
+                    <span className="text-sm font-medium text-purple-900">AI Suggestions</span>
+                  </div>
+                  <p className="text-sm text-purple-700">Ask me to help improve your PRD content.</p>
+                </div>
+                <button className="w-full btn-outline text-sm">
+                  Generate AI Suggestions
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

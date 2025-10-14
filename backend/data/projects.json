@@ -230,5 +230,33 @@
     "createdAt": "2025-10-10T10:09:34.590Z",
     "updatedAt": "2025-10-10T10:09:34.590Z",
     "version": 1
+  },
+  {
+    "id": "1760341359484",
+    "name": "TEST",
+    "description": "hello",
+    "productId": "product-1760074895132",
+    "status": "DRAFT",
+    "currentStage": "PRODUCT_THINKING",
+    "assignedUsers": {
+      "PM": [
+        "1"
+      ]
+    },
+    "approvals": [],
+    "prd": {
+      "id": "prd-1760341359448",
+      "objectives": [],
+      "targetUsers": [],
+      "successMetrics": [],
+      "businessContext": "",
+      "constraints": [],
+      "status": "DRAFT",
+      "createdAt": "2025-10-13T07:42:39.448Z",
+      "updatedAt": "2025-10-13T07:42:39.448Z"
+    },
+    "createdAt": "2025-10-13T07:42:39.484Z",
+    "updatedAt": "2025-10-13T07:42:39.484Z",
+    "version": 1
   }
 ]

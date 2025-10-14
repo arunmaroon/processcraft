@@ -14,6 +14,7 @@ import AIAgentHub from './components/admin/AIAgentHub';
 import UXDesignerModule from './components/ux/UXDesignerModule';
 import AIChatTab from './components/ai-chat/AIChatTab';
 import Settings from './components/admin/Settings';
+import { enhancedPRDService } from './services/enhancedPRDService';
 import { useApp } from './context/AppContext';
 import { SafeMapErrorBoundary } from './components/SafeMapErrorBoundary';
 
@@ -75,6 +76,9 @@ function AppContent() {
     if (adminToken) {
       setIsAdmin(true);
     }
+    
+    // Initialize enhanced PRD service with sample data
+    enhancedPRDService.initializeSampleData();
   }, []);
 
   // Debug logging

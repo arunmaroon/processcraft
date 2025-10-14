@@ -2,37 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Settings, Users, Clock, CheckCircle } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import StageNavigator from './StageNavigator';
-import ProductThinking from '../research/ProductThinking';
-import ResearchStage from '../research/ResearchStage';
-import DesignStage from '../design/DesignStage';
-import UIGeneration from '../ui-generation/UIGeneration';
-import CodeExport from '../code-export/CodeExport';
+import ProjectPRDs from './ProjectPRDs';
+import PRDWorkflow from './PRDWorkflow';
+import PRDCreate from '../research/PRDCreate';
 import { WorkflowStage, Project } from '../../types';
-
-const stageComponents: { [key in WorkflowStage]: React.ComponentType<any> } = {
-  PRODUCT_THINKING: ProductThinking,
-  USER_RESEARCH: ResearchStage,
-  UX_DESIGN: DesignStage,
-  UI_DESIGN: UIGeneration,
-  VISUAL_DESIGN: UIGeneration,
-  UX_CONTENT: UIGeneration,
-  CODE_EXPORT: CodeExport,
-};
-
-// Legacy stage mapping for backward compatibility
-const legacyStageMapping: { [key: string]: WorkflowStage } = {
-  'RESEARCH': 'USER_RESEARCH',
-  'UI_GENERATION': 'UI_DESIGN',
-  'PM_MANAGER': 'PRODUCT_THINKING',
-  'DESIGNER': 'UX_DESIGN',
-  'DESIGN_HEAD': 'VISUAL_DESIGN'
-};
+import { EnhancedPRD } from '../../types/prd-enhanced';
+import { enhancedPRDService } from '../../services/enhancedPRDService';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const { getProjectById, updateProject } = useApp();
   const [activeStage, setActiveStage] = useState<WorkflowStage>('PRODUCT_THINKING');
+  const [currentView, setCurrentView] = useState<'prds' | 'prd-workflow' | 'create-prd'>('prds');
+  const [selectedPRD, setSelectedPRD] = useState<EnhancedPRD | null>(null);
 
   const project = getProjectById(id!);
 
@@ -69,79 +51,61 @@ export default function ProjectDetail() {
     );
   }
 
-  // Handle legacy stage names
-  const normalizedStage = legacyStageMapping[activeStage] || activeStage;
-  const StageComponent = stageComponents[normalizedStage as WorkflowStage];
-  
-  // Debug logging
-  console.log('ProjectDetail: activeStage:', activeStage);
-  console.log('ProjectDetail: normalizedStage:', normalizedStage);
-  console.log('ProjectDetail: StageComponent:', StageComponent);
-  console.log('ProjectDetail: stageComponents:', stageComponents);
+  const handlePRDSelect = (prd: EnhancedPRD) => {
+    setSelectedPRD(prd);
+    setCurrentView('prd-workflow');
+  };
+
+  const handleCreatePRD = () => {
+    setCurrentView('create-prd');
+  };
+
+  const handleBackToPRDs = () => {
+    setCurrentView('prds');
+    setSelectedPRD(null);
+  };
+
+  const handlePRDCreated = (prd: EnhancedPRD) => {
+    setSelectedPRD(prd);
+    setCurrentView('prd-workflow');
+  };
+
+  const handlePRDUpdate = (updatedPRD: EnhancedPRD) => {
+    enhancedPRDService.savePRD(updatedPRD);
+    setSelectedPRD(updatedPRD);
+  };
+
+  if (currentView === 'prd-workflow' && selectedPRD) {
+    return (
+      <PRDWorkflow
+        project={project}
+        prd={selectedPRD}
+        onBack={handleBackToPRDs}
+        onPRDUpdate={handlePRDUpdate}
+      />
+    );
+  }
+
+  if (currentView === 'create-prd') {
+    return (
+      <div className="h-full">
+        <PRDCreate
+          projectId={project.id}
+          onPRDCreated={handlePRDCreated}
+          onCancel={handleBackToPRDs}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <Link
-            to="/"
-            className="p-1.5 rounded hover:bg-gray-100 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <div>
-            <div className="flex items-center space-x-2 mb-1">
-              <h1 className="text-lg font-semibold text-gray-900">{project.name}</h1>
-              <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                project.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
-                project.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                project.status === 'DRAFT' ? 'bg-gray-100 text-gray-800' :
-                project.status === 'PENDING_APPROVAL' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-emerald-100 text-emerald-800'
-              }`}>
-                {project.status?.replace('_', ' ').toLowerCase() || 'unknown'}
-              </span>
-            </div>
-            <p className="text-sm text-gray-500 truncate max-w-md">{project.description}</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <button className="p-1.5 rounded hover:bg-gray-100 transition-colors">
-            <Settings className="w-4 h-4 text-gray-600" />
-          </button>
-        </div>
-      </div>
-
-
-      {/* Stage Navigator */}
-      <StageNavigator
-        currentStage={project.currentStage}
-        activeStage={activeStage}
-        onStageChange={setActiveStage}
+    <div className="h-full">
+      <ProjectPRDs
         project={project}
+        onBack={() => window.history.back()}
+        onPRDSelect={handlePRDSelect}
+        onCreatePRD={handleCreatePRD}
       />
-
-      {/* Stage Content */}
-      <div className="card">
-        {StageComponent ? (
-          <StageComponent
-            project={project}
-            onProjectUpdate={async (updatedProject: Project) => {
-              console.log('ProjectDetail: onProjectUpdate called with:', updatedProject);
-              await updateProject(updatedProject);
-              console.log('ProjectDetail: Project updated successfully');
-            }}
-          />
-        ) : (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Stage Component Not Found</h3>
-            <p className="text-gray-600">The selected stage component is not available.</p>
-            <p className="text-sm text-gray-500 mt-2">Active Stage: {activeStage}</p>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
